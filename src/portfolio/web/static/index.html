@@ -14,23 +14,31 @@
 <title>StockCapy · 入手價</title>
 <style>
 :root{
-  --bg:#f4f6f8; --panel:#ffffff; --panel-alt:#f9fafb; --border:#d7dde5;
-  --text:#151a21; --dim:#5f6b7a; --accent:#1462b4; --accent-soft:#e7f0fa;
-  --up:#0d7b3e; --down:#c22f2f; --near:#9a6b00;
-  --warn-bg:#fff7e0; --warn-border:#d9a400; --warn-text:#6a5100;
-  --err-bg:#fdecec; --err-border:#c22f2f; --err-text:#8d1f1f;
-  --hit-bg:#e9f7ed; --hit-border:#0d7b3e;
-  --chip:#eceff3; --shadow:0 1px 2px rgba(16,24,40,.06);
+  --bg:#F5F1EA; --panel:#FFFFFF; --panel-alt:#FBF8F3; --border:#E6DFD3;
+  --text:#231C15; --dim:#6B5F52; --accent:#8A5A2B; --accent-soft:#F3E8DA; --accent-strong:#6E4519;
+  --on-accent:#FFFFFF;
+  --up:#1D7A4B; --down:#B83227; --near:#9A6B00;
+  --red:#B83227; --green:#1D7A4B;
+  --ok-bg:#E3F1E8; --ok-text:#175C39;
+  --info-bg:#E3EDF3; --info-text:#1F5670;
+  --warn-bg:#FFF3D6; --warn-border:#D9A400; --warn-text:#6B4E00;
+  --err-bg:#FDECE9; --err-border:#C22F2F; --err-text:#8F2A20;
+  --hit-bg:#F3E8DA; --hit-border:#8A5A2B;
+  --chip:#ECE7DF; --shadow:0 1px 2px rgba(35,28,21,.06);
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#11151a; --panel:#181d24; --panel-alt:#1f252d; --border:#2c343e;
-    --text:#e6eaef; --dim:#94a1b1; --accent:#5aa2ef; --accent-soft:#1b2a3c;
-    --up:#4cc47c; --down:#ef6b6b; --near:#e0b44c;
-    --warn-bg:#3a2f12; --warn-border:#a8831f; --warn-text:#f0dca6;
-    --err-bg:#3a1c1c; --err-border:#b04444; --err-text:#f5c6c6;
-    --hit-bg:#14301f; --hit-border:#3f9c63;
-    --chip:#242c35; --shadow:none;
+    --bg:#17130F; --panel:#201B16; --panel-alt:#28221C; --border:#3A322A;
+    --text:#EDE6DC; --dim:#A89C8D; --accent:#D9A56D; --accent-soft:#3A2C1D; --accent-strong:#E8C08F;
+    --on-accent:#1B130B;
+    --up:#5CC48C; --down:#EF7B6F; --near:#E0B44C;
+    --red:#EF7B6F; --green:#5CC48C;
+    --ok-bg:#17301F; --ok-text:#6FD19C;
+    --info-bg:#1C2D38; --info-text:#8CC4E0;
+    --warn-bg:#3A2F12; --warn-border:#A8831F; --warn-text:#F0DCA6;
+    --err-bg:#3A1C1C; --err-border:#B04444; --err-text:#F5C6C6;
+    --hit-bg:#3A2C1D; --hit-border:#D9A56D;
+    --chip:#2E2720; --shadow:none;
   }
 }
 *{box-sizing:border-box}
@@ -43,7 +51,7 @@ body{
 .num,table,input,.mono{font-variant-numeric:tabular-nums}
 a{color:var(--accent)}
 h1,h2,h3,h4{margin:0;font-weight:650}
-h2{font-size:16px}
+h2{font-size:17px}
 h3{font-size:14px}
 h4{font-size:13px}
 .dim{color:var(--dim)}
@@ -62,27 +70,31 @@ h4{font-size:13px}
 .brand .logo{display:inline-flex; width:28px; height:28px; align-self:center}
 .brand .logo img{width:100%; height:100%; border-radius:8px; object-fit:cover}
 .brand .spacer{flex:1}
-.tabs{display:flex; gap:2px; overflow-x:auto; scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
+.tagline{font-size:12px}
+.btn.icon{padding:0; width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; color:var(--dim)}
+.tabs{display:flex; gap:4px; padding:2px 0 8px}
 .tabs a{
-  flex:0 0 auto; padding:7px 12px; border-radius:6px 6px 0 0; text-decoration:none;
-  color:var(--dim); border:1px solid transparent; border-bottom:none; font-size:13px; white-space:nowrap;
+  display:inline-flex; align-items:center; gap:7px; padding:7px 16px; border-radius:999px;
+  text-decoration:none; color:var(--dim); font-size:14px; font-weight:500; white-space:nowrap;
 }
-.tabs a.active{background:var(--accent-soft); color:var(--text); border-color:var(--border); font-weight:650}
+.tabs a svg{width:18px; height:18px; flex:none}
+.tabs a.active{background:var(--accent-soft); color:var(--accent-strong); font-weight:700}
+.tabs a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 main{padding:12px; max-width:1180px; margin:0 auto}
 /* Author display rules beat the UA [hidden] rule, so make it win everywhere. */
 [hidden]{display:none !important}
 .warn-mark{color:var(--near); font-weight:600}
 .notice{border:1px solid var(--near); border-radius:6px; padding:8px 10px; margin:10px 0; font-size:12px}
 .panel{
-  background:var(--panel); border:1px solid var(--border); border-radius:8px;
-  padding:10px 12px; margin-bottom:12px; box-shadow:var(--shadow);
+  background:var(--panel); border:1px solid var(--border); border-radius:14px;
+  padding:14px 16px; margin-bottom:14px; box-shadow:var(--shadow);
 }
 .panel-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:8px}
 .hint{margin:0; font-size:12px; color:var(--dim)}
 .state{padding:14px 2px; color:var(--dim); font-size:13px}
 .state-art{display:flex; flex-direction:column; align-items:center; gap:10px; padding:10px 2px 16px; text-align:center}
 .state-art img{display:block; height:auto; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
+.cta-art{display:block; width:120px; height:auto; margin:0 auto 6px}
 .cheer{float:right; width:88px; height:auto; margin:-10px -2px 4px 10px}
 .state-art img.sticker{border-radius:0; box-shadow:none; filter:drop-shadow(0 6px 8px rgba(60,35,10,.22))}
 .login-hero{display:block; width:100%; max-width:340px; height:auto; margin:0 auto 12px; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
@@ -94,11 +106,11 @@ footer img{width:20px; height:20px}
 
 /* controls */
 .btn{
-  font:inherit; font-size:13px; padding:5px 10px; border-radius:6px; cursor:pointer;
+  font:inherit; font-size:13px; padding:6px 12px; border-radius:8px; cursor:pointer;
   border:1px solid var(--border); background:var(--panel-alt); color:var(--text);
 }
 .btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:650}
 .btn.tiny{padding:2px 7px; font-size:12px}
 .btn.danger{color:var(--down)}
 .btn:disabled{opacity:.55; cursor:progress}
@@ -136,14 +148,15 @@ td.sym{font-weight:650}
   display:inline-block; padding:1px 6px; border-radius:10px; font-size:11px;
   background:var(--chip); color:var(--dim); white-space:nowrap;
 }
-.badge.ok{background:var(--hit-bg); color:var(--up); font-weight:650}
+.badge.ok{background:var(--ok-bg); color:var(--ok-text); font-weight:650}
+.badge.hit{background:var(--accent); color:var(--on-accent); font-weight:700}
 .badge.warn{background:var(--warn-bg); color:var(--warn-text); font-weight:650}
 .badge.danger{background:var(--err-bg); color:var(--down); font-weight:650}
-.badge.info{background:var(--accent-soft); color:var(--accent)}
+.badge.info{background:var(--info-bg); color:var(--info-text)}
 .box{border:1px solid var(--border); border-radius:7px; padding:9px 11px; margin-bottom:8px; font-size:13px}
 .box.warn{background:var(--warn-bg); border-color:var(--warn-border); color:var(--warn-text)}
 .box.error{background:var(--err-bg); border-color:var(--err-border); color:var(--err-text)}
-.box.ok-box{background:var(--hit-bg); border-color:var(--hit-border)}
+.box.ok-box{background:var(--ok-bg); border-color:var(--green)}
 /* 分段切換（美股／台股）與可點選的券商徽章 */
 .seg{display:inline-flex; background:var(--chip); border-radius:9px; padding:3px; gap:2px}
 .seg button{
@@ -157,8 +170,42 @@ td.sym{font-weight:650}
   padding:5px 13px; border-radius:999px; cursor:pointer;
 }
 .pick:hover{border-color:var(--accent)}
-.pick[aria-checked="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:650}
+.pick[aria-checked="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong); font-weight:650}
 .pick[aria-checked="true"]::before{content:"✓ "}
+#subnav{display:flex; max-width:100%; overflow-x:auto; scrollbar-width:none; margin:0 0 12px}
+#subnav::-webkit-scrollbar{display:none}
+#target-filters .pick{padding:3px 12px; font-size:13px}
+@media (min-width:821px){#subnav{max-width:560px}}
+.seg a{
+  flex:1 0 auto; text-align:center; color:var(--dim); font-weight:600; padding:7px 18px;
+  border-radius:7px; text-decoration:none; white-space:nowrap;
+}
+.seg a[aria-selected="true"]{background:var(--panel); color:var(--text); box-shadow:var(--shadow)}
+.seg a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+details.panel>summary{cursor:pointer}
+/* 今天 */
+.today-grid{display:grid; grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); gap:14px; align-items:start}
+.today-side{display:flex; flex-direction:column; min-width:0}
+.hero-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap}
+.hero-num{font-size:36px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:6px 0 2px; line-height:1.15}
+.hero-gain{font-size:15px; font-weight:600; margin-left:10px; letter-spacing:0}
+.alloc{display:flex; height:9px; border-radius:999px; overflow:hidden; background:var(--chip); margin-top:12px}
+.alloc i{display:block; height:100%}
+.alloc .a-us{background:var(--accent)}
+.alloc .a-tw{background:#D6B98F}
+.alloc-legend{display:flex; gap:18px; flex-wrap:wrap; margin-top:7px; font-size:12px; color:var(--dim)}
+.att-row{display:flex; align-items:center; gap:12px; padding:11px 0; border-top:1px solid var(--border); text-decoration:none; color:inherit}
+.att-row:first-of-type{border-top:0}
+.att-row .att-text{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; font-size:13px; color:var(--dim)}
+.att-row .att-text b{color:var(--text); font-size:14px}
+.att-row .go{color:var(--accent-strong); font-size:12.5px; font-weight:650; white-space:nowrap}
+.near-row{display:flex; flex-direction:column; gap:4px; padding:8px 0}
+.near-row .gapbar{display:flex}
+.recent-row{display:flex; gap:10px; font-size:13px; padding:5px 0}
+.recent-row .d{color:var(--dim); font-variant-numeric:tabular-nums; width:42px; flex:none}
+.cta{display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:8px 2px}
+.cta p{margin:0; color:var(--dim); font-size:13px; line-height:1.55}
+.cta a.btn{text-decoration:none; display:inline-block}
 .seg button:focus-visible,.pick:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 .inline-field{display:inline-flex; gap:6px; align-items:center; font-size:13px; margin-bottom:4px}
 .box .err-msg{margin:4px 0 8px; font-size:12px; word-break:break-word; white-space:pre-wrap}
@@ -235,6 +282,21 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
   border:2px dashed var(--border); border-radius:8px; padding:18px 12px; text-align:center;
   cursor:pointer; color:var(--dim); font-size:13px; background:var(--panel-alt);
 }
+/* 漲跌色依市場：台股紅漲綠跌、美股綠漲紅跌；跨市場合計跟本國貨幣（見 marketOf）。 */
+.pos-tw,.neg-us{color:var(--red)}
+.neg-tw,.pos-us{color:var(--green)}
+.trend{font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* 市場徽章與距離條 */
+.mk{display:inline-block; font-size:11px; font-weight:700; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:1px}
+.mk.us{background:var(--accent-soft); color:var(--accent-strong)}
+.mk.tw{background:var(--info-bg); color:var(--info-text)}
+.gapbar{display:inline-flex; align-items:center; gap:8px; min-width:120px}
+.gaptrack{flex:1; height:7px; border-radius:999px; background:var(--chip); overflow:hidden; min-width:56px}
+.gapfill{display:block; height:100%; background:var(--accent); opacity:.5}
+.gapfill.hit{opacity:1}
+.gaplabel{font-size:12px; color:var(--dim); white-space:nowrap}
+.gaplabel.hit{color:var(--accent-strong); font-weight:700}
 .drop.drag{border-color:var(--accent); background:var(--accent-soft); color:var(--text)}
 .spark{width:100%; height:64px; display:block}
 .spark path{fill:none; stroke:var(--accent); stroke-width:1.6; vector-effect:non-scaling-stroke}
@@ -258,7 +320,21 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
 }
 .toast.bad{border-left-color:var(--down)}
 
+@media (max-width:820px){
+  .today-grid{grid-template-columns:minmax(0,1fr)}
+}
 @media (max-width:640px){
+  .hero-num{font-size:28px}
+  .hero-gain{display:block; margin-left:0; margin-top:2px}
+  .tagline{display:none}
+  /* 手機：主分頁改成底部導覽，拇指點得到，也不會再有被切掉的分頁。 */
+  .tabs{
+    position:fixed; left:0; right:0; bottom:0; z-index:10; background:var(--panel);
+    border-top:1px solid var(--border); padding:6px 6px calc(8px + env(safe-area-inset-bottom)); gap:2px;
+  }
+  .tabs a{flex:1; flex-direction:column; gap:2px; font-size:11.5px; padding:6px 0; border-radius:12px; justify-content:center}
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  #toasts{bottom:calc(86px + env(safe-area-inset-bottom))}
   main{padding:8px}
   .panel{padding:9px 10px}
   table.grid th.opt,table.grid td.opt{display:none}
@@ -271,18 +347,15 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
   <div class="brand">
     <span class="logo"><img src="/icons/capy-mark.png" alt="StockCapy" width="28" height="28"></span>
     <strong>StockCapy</strong>
-    <span class="dim">淡定等到價 · 資料不外傳</span>
+    <span class="dim tagline">淡定等到價 · 資料不外傳</span>
     <span class="spacer"></span>
-    <button class="btn tiny" type="button" id="refresh">重新載入本頁資料</button>
+    <span class="dim" id="updated"></span>
+    <button class="btn icon" type="button" id="refresh" aria-label="重新載入本頁資料" title="重新載入本頁資料"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg></button>
   </div>
-  <nav class="tabs">
-    <a href="#targets" id="link-targets">入手價</a>
-    <a href="#positions" id="link-positions">持倉</a>
-    <a href="#risk" id="link-risk">風險</a>
-    <a href="#dividends" id="link-dividends">股利</a>
-    <a href="#watchlist" id="link-watchlist">監控</a>
-    <a href="#signals" id="link-signals">智慧提醒</a>
-    <a href="#data" id="link-data">資料</a>
+  <nav class="tabs" aria-label="主要分頁">
+    <a href="#today" id="link-today"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>今天</span></a>
+    <a href="#stocks" id="link-stocks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h18v13H3z"/><path d="M8 7V4h8v3"/></svg><span>我的股票</span></a>
+    <a href="#manage" id="link-manage"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span>提醒與資料</span></a>
   </nav>
 </header>
 
@@ -304,17 +377,13 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
     </div>
   </section>
 
-  <section id="tab-targets" hidden>
-    <div class="panel">
-      <div class="panel-head">
-        <h2>入手價對照</h2>
-        <p class="hint">點一列展開估值模型明細與價格位置。已到價的列以綠色標示。</p>
-      </div>
-      <div id="targets-body"></div>
-    </div>
+  <div id="subnav" class="seg" role="tablist" aria-label="分類" hidden></div>
+
+  <section id="view-today" hidden>
+    <div id="today-body"></div>
   </section>
 
-  <section id="tab-positions" hidden>
+  <section id="view-positions" hidden>
     <div class="panel">
       <div class="panel-head">
         <h2>持倉</h2>
@@ -331,17 +400,46 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
     </div>
   </section>
 
-  <section id="tab-risk" hidden>
+  <section id="view-targets" hidden>
     <div class="panel">
       <div class="panel-head">
-        <h2>風險指標</h2>
-        <p class="hint">以目前持倉回溯計算，非歷史實際交易績效。</p>
+        <h2>入手價對照</h2>
+        <p class="hint">點一列展開估值模型明細與價格位置。已到價的列以棕色標示。</p>
+        <span class="spacer"></span>
+        <button class="btn primary" type="button" id="add-watch-button">＋ 加一檔觀察</button>
       </div>
-      <div id="risk-body"></div>
+      <div class="pick-row" id="target-filters" style="margin-top:0"></div>
+      <div id="targets-body"></div>
     </div>
+    <div class="panel" id="watch-panel">
+      <div class="panel-head">
+        <h3>觀察清單與到價規則</h3>
+        <p class="hint">同一檔同一天只通知一次；改了目標價會自動重新武裝。入手價與出場價至少填一個，不必持有該檔。</p>
+      </div>
+      <div id="watchlist-body"></div>
+      <form class="inline" id="watch-form" autocomplete="off" style="margin-top:10px">
+        <label class="wide">代號<input name="symbol" placeholder="TSM 或 2330" required maxlength="12"></label>
+        <label>入手價<input name="buy_below" type="number" step="0.01" min="0" placeholder="180"></label>
+        <label>出場價<input name="sell_above" type="number" step="0.01" min="0" placeholder="280"></label>
+        <button class="btn primary" type="submit">加入</button>
+      </form>
+    </div>
+    <details class="panel" id="assumptions-panel">
+      <summary><strong>調整估值假設</strong> <span class="hint">target P/E 是最關鍵的假設；先看上方展開的實際 P/E 再設</span></summary>
+      <p class="hint" style="margin:8px 0">報酬率與成長率用小數（0.09 = 9%）。改了入手價會立刻重算。</p>
+      <div id="assumptions-body"></div>
+      <form class="inline" id="assumption-form" autocomplete="off" style="margin-top:10px">
+        <label>代號<input name="symbol" placeholder="MSFT" required maxlength="12"></label>
+        <label>target P/E<input name="target_pe" type="number" step="0.1" min="0" placeholder="28"></label>
+        <label>要求報酬率<input name="required_return" type="number" step="0.01" min="0" placeholder="0.09"></label>
+        <label>股利成長<input name="dividend_growth" type="number" step="0.01" placeholder="0.04"></label>
+        <label>安全邊際<input name="margin_of_safety" type="number" step="0.01" min="0" max="0.9" placeholder="0.15"></label>
+        <button class="btn primary" type="submit">覆寫</button>
+      </form>
+    </details>
   </section>
 
-  <section id="tab-dividends" hidden>
+  <section id="view-dividends" hidden>
     <div class="panel">
       <div class="panel-head">
         <h2>股利</h2>
@@ -351,50 +449,43 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
     </div>
   </section>
 
-  <section id="tab-watchlist" hidden>
+  <section id="view-risk" hidden>
     <div class="panel">
       <div class="panel-head">
-        <h2>價格監控</h2>
-        <p class="hint">同一檔同一天只通知一次；改了目標價會自動重新武裝。</p>
+        <h2>風險指標</h2>
+        <p class="hint">以目前持倉回溯計算，非歷史實際交易績效。</p>
       </div>
-      <div id="watchlist-body"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-head"><h3>新增監控</h3><p class="hint">入手價與出場價至少填一個，不必持有該檔。</p></div>
-      <form class="inline" id="watch-form" autocomplete="off">
-        <label class="wide">代號<input name="symbol" placeholder="TSM" required maxlength="12"></label>
-        <label>入手價<input name="buy_below" type="number" step="0.01" min="0" placeholder="180"></label>
-        <label>出場價<input name="sell_above" type="number" step="0.01" min="0" placeholder="280"></label>
-        <button class="btn primary" type="submit">加入</button>
-      </form>
-    </div>
-    <div class="panel">
-      <div class="panel-head"><h3>立即檢查</h3><p class="hint">比對現價與提醒價，到價就發通知。</p></div>
-      <button class="btn" type="button" id="check-button">立即檢查</button>
-      <div id="check-result" style="margin-top:8px"></div>
+      <div id="risk-body"></div>
     </div>
   </section>
 
-  <section id="tab-signals" hidden>
+  <section id="view-history" hidden>
     <div class="panel">
       <div class="panel-head">
-        <h2>智慧提醒</h2>
+        <h2>目前觸發的智慧提醒</h2>
         <p class="hint">技術指標 + 均價規則觸發的現況描述，<strong>不是買賣建議</strong>。門檻由你設定，上線前先回測。</p>
       </div>
       <div id="signals-body"></div>
     </div>
     <div class="panel">
-      <div class="panel-head"><h3>通知對象</h3><p class="hint">持股與監控清單預設都會推播。關掉的股票仍會列在上方，只是不推播；也可以加入沒持有的股票。</p></div>
+      <div class="panel-head"><h3>觸發歷史</h3><p class="hint">過去實際觸發並通知過的智慧提醒。</p></div>
+      <div id="signal-history-body"></div>
+    </div>
+  </section>
+
+  <section id="view-notify" hidden>
+    <div class="panel">
+      <div class="panel-head"><h3>立即檢查</h3><p class="hint">到價提醒與智慧提醒一起檢查並推播新觸發（同樣條件要再走 5% 或滿 7 天才重送）。</p></div>
+      <button class="btn primary" type="button" id="check-button">立即檢查</button>
+      <div id="check-result" style="margin-top:8px"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>通知對象</h3><p class="hint">持股與監控清單預設都會推播。關掉的股票仍會列在觸發紀錄，只是不推播；也可以加入沒持有的股票。</p></div>
       <form class="inline" id="subscription-form" autocomplete="off">
-        <label class="wide">代號<input name="symbol" placeholder="TSM" required maxlength="15"></label>
+        <label class="wide">代號<input name="symbol" placeholder="TSM 或 2330" required maxlength="15"></label>
         <button class="btn primary" type="submit">加入</button>
       </form>
       <div id="subscriptions-body" style="margin-top:8px"></div>
-    </div>
-    <div class="panel">
-      <div class="panel-head"><h3>立即檢查</h3><p class="hint">重新評估並推播新觸發（同樣條件要再走 5% 或滿 7 天才重送）。</p></div>
-      <button class="btn" type="button" id="signals-check-button">立即檢查</button>
-      <div id="signals-check-result" style="margin-top:8px"></div>
     </div>
     <div class="panel">
       <div class="panel-head"><h3>門檻</h3><p class="hint">留空的欄位沿用通用預設。代號填 <code>*</code> 改通用預設。</p></div>
@@ -408,15 +499,13 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
       </form>
       <div id="thresholds-body" style="margin-top:8px"></div>
     </div>
-    <div class="panel">
-      <div class="panel-head"><h3>觸發歷史</h3><p class="hint">過去實際觸發並通知過的智慧提醒。</p></div>
-      <div id="signal-history-body"></div>
-    </div>
   </section>
 
-  <section id="tab-data" hidden>
+  <section id="view-import" hidden>
     <div id="import-panels"><div class="state">載入中…</div></div>
+  </section>
 
+  <section id="view-manual" hidden>
     <div class="panel">
       <div class="panel-head">
         <h2>手動持倉</h2>
@@ -424,27 +513,11 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
       </div>
       <div id="manual-body"></div>
       <form class="inline" id="manual-form" autocomplete="off" style="margin-top:10px">
-        <label>代號<input name="symbol" placeholder="VTI" required maxlength="12"></label>
+        <label>代號<input name="symbol" placeholder="VTI 或 2330" required maxlength="12"></label>
         <label>股數<input name="quantity" type="number" step="0.00001" min="0" placeholder="10.05" required></label>
         <label>平均成本<input name="average_cost" type="number" step="0.01" min="0" placeholder="300.00" required></label>
         <label class="wide">備註<input name="note" placeholder="選填"></label>
         <button class="btn primary" type="submit">新增 / 覆寫</button>
-      </form>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <h2>估值假設</h2>
-        <p class="hint">target P/E 是最關鍵的假設；先看入手價分頁裡的實際 P/E 再設。報酬率與成長率用小數（0.09 = 9%）。</p>
-      </div>
-      <div id="assumptions-body"></div>
-      <form class="inline" id="assumption-form" autocomplete="off" style="margin-top:10px">
-        <label>代號<input name="symbol" placeholder="MSFT" required maxlength="12"></label>
-        <label>target P/E<input name="target_pe" type="number" step="0.1" min="0" placeholder="28"></label>
-        <label>要求報酬率<input name="required_return" type="number" step="0.01" min="0" placeholder="0.09"></label>
-        <label>股利成長<input name="dividend_growth" type="number" step="0.01" placeholder="0.04"></label>
-        <label>安全邊際<input name="margin_of_safety" type="number" step="0.01" min="0" max="0.9" placeholder="0.15"></label>
-        <button class="btn primary" type="submit">覆寫</button>
       </form>
     </div>
   </section>
@@ -455,7 +528,15 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
 <script>
 'use strict';
 
-var TABS = ['targets', 'positions', 'risk', 'dividends', 'watchlist', 'signals', 'data'];
+/* 兩層導覽：主分頁（今天／我的股票／提醒與資料）→ 分段（view）。分段最多一層，不再往下挖。 */
+var TAB_NAMES = ['today', 'stocks', 'manage'];
+var TAB_VIEWS = {
+  today: [],
+  stocks: [['positions', '持股'], ['targets', '入手價'], ['dividends', '股利'], ['risk', '風險']],
+  manage: [['history', '觸發紀錄'], ['notify', '通知設定'], ['import', '匯入'], ['manual', '手動持倉']]
+};
+var ALL_VIEWS = ['today', 'positions', 'targets', 'dividends', 'risk', 'history', 'notify', 'import', 'manual'];
+var lastViewOf = {};
 var DASH = '—';
 var ESCAPES = {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'};
 
@@ -506,7 +587,7 @@ function homeAmount(value) {
 function signedHomeAmount(value) {
   if (!isNumber(value)) return '<span class="dim">' + DASH + '</span>';
   var text = (value >= 0 ? '+' : '-') + homeMark + decimals(Math.abs(value), 0, 0);
-  return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
+  return trendHtml(text, value);
 }
 
 function shares(value) {
@@ -521,18 +602,57 @@ function ratio(value, digits) {
   return isNumber(value) ? Number(value).toFixed(digits == null ? 2 : digits) : DASH;
 }
 
+/* 跨市場的合計沒有單一市場，跟本國貨幣：台幣＝台灣慣例。載入投資組合後由 setAggregateMarket 更新。 */
+var aggregateMarket = 'tw';
+
+function setAggregateMarket(homeCurrency) {
+  aggregateMarket = String(homeCurrency || 'TWD').toUpperCase() === 'TWD' ? 'tw' : 'us';
+}
+
+/** hint 可以是代號、幣別代碼（TWD／USD）或省略（＝跨市場合計）。 */
+function marketOf(hint) {
+  if (hint == null || hint === '') return aggregateMarket;
+  if (hint === 'TWD') return 'tw';
+  if (hint === 'USD') return 'us';
+  return currencyForSymbol(hint) === 'TWD' ? 'tw' : 'us';
+}
+
+/** 顏色之外一律帶 ▲▼，色弱與台美相反的慣例都不會讀錯方向。 */
+function trendHtml(text, value, hint) {
+  if (value === 0) return '<span class="trend dim">' + text + '</span>';
+  var direction = value > 0 ? 'pos' : 'neg';
+  return '<span class="trend ' + direction + '-' + marketOf(hint) + '">'
+    + (value > 0 ? '▲ ' : '▼ ') + text + '</span>';
+}
+
 /** 損益與百分比一律帶正負號與顏色，null 走灰色破折號而不是 NaN。 */
-function signedPercent(value, digits) {
+function signedPercent(value, digits, hint) {
   if (!isNumber(value)) return '<span class="dim">' + DASH + '</span>';
   var text = (value >= 0 ? '+' : '') + Number(value).toFixed(digits == null ? 2 : digits) + '%';
-  return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
+  return trendHtml(text, Number(value), hint);
 }
 
 function signedMoney(value, currency) {
   if (!isNumber(value)) return '<span class="dim">' + DASH + '</span>';
   var mark = CURRENCY_MARKS[currency || 'USD'] || '$';
   var text = (value >= 0 ? '+' : '-') + mark + decimals(Math.abs(value), 2, 2);
-  return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
+  return trendHtml(text, value, currency);
+}
+
+function noteHomeCurrency(portfolio) {
+  var home = portfolio && portfolio.home_currency_summary;
+  if (home && home.home_currency) setAggregateMarket(home.home_currency);
+}
+
+function marketBadgeHtml(symbol) {
+  return currencyForSymbol(symbol) === 'TWD'
+    ? '<span class="mk tw" title="台股，以台幣計價">台</span>'
+    : '<span class="mk us" title="美股，以美元計價">美</span>';
+}
+
+/** 代號後面帶市場徽章：台美同表時一眼可辨，不只靠 NT$ 與 $。 */
+function symHtml(symbol) {
+  return esc(symbol) + marketBadgeHtml(symbol);
 }
 
 function numberOrNull(raw) {
@@ -578,6 +698,17 @@ function cheerHtml(art) {
   return '<img class="sticker cheer" src="/art/' + spec[0] + '" alt="" width="' + spec[2]
     + '" height="' + spec[3] + '">';
 }
+
+/** 空狀態要有下一步：一句話說明，加一顆直接去做的按鈕。 */
+function emptyCtaHtml(message, href, label, art) {
+  var spec = art ? EMPTY_ART[art] : null;
+  var picture = spec ? '<img class="sticker cta-art" src="/art/' + spec[0] + '" alt="" width="' + spec[2]
+    + '" height="' + spec[3] + '">' : '';
+  return '<div class="cta">' + picture + '<p>' + esc(message) + '</p><a class="btn primary" href="' + esc(href) + '">'
+    + esc(label) + '</a></div>';
+}
+
+var NO_POSITIONS_CTA = emptyCtaHtml('還沒有持股。匯入券商 CSV，或手動輸入一檔，淡定等它到價。', '#manage/import', '去匯入', 'thumbsup');
 
 /* ---------- API ---------- */
 
@@ -638,6 +769,11 @@ async function loadInto(element, render) {
   try {
     await render(element);
   } catch (error) {
+    /* 409＝還沒有任何持倉：新使用者的正常狀態，不是錯誤。 */
+    if (/^HTTP 409/.test(String(error && error.message))) {
+      element.innerHTML = NO_POSITIONS_CTA;
+      return;
+    }
     setError(element, error, function () { loadInto(element, render); });
   }
 }
@@ -666,14 +802,74 @@ async function runWrite(action, successMessage, reload) {
 
 function loadTargets() { loadInto(byId('targets-body'), renderTargets); }
 
+function loadTargetsView() {
+  loadTargets();
+  loadWatchlist();
+  loadInto(byId('assumptions-body'), renderAssumptions);
+}
+
+var targetState = {rows: [], source: 'all', market: 'all'};
+
+function isHeldTarget(target) { return isNumber(target.average_cost); }
+
+function visibleTargets() {
+  return targetState.rows.filter(function (target) {
+    if (targetState.source === 'held' && !isHeldTarget(target)) return false;
+    if (targetState.source === 'watch' && isHeldTarget(target)) return false;
+    if (targetState.market !== 'all' && marketOf(target.symbol) !== targetState.market) return false;
+    return true;
+  });
+}
+
+function renderTargetFilters() {
+  var rows = targetState.rows;
+  var held = rows.filter(isHeldTarget).length;
+  var pick = function (kind, value, label) {
+    var on = targetState[kind] === value;
+    return '<button type="button" class="pick" role="radio" aria-checked="' + on + '" data-kind="' + kind
+      + '" data-value="' + value + '">' + label + '</button>';
+  };
+  byId('target-filters').innerHTML = rows.length
+    ? pick('source', 'all', '全部 ' + rows.length) + pick('source', 'held', '持股 ' + held)
+      + pick('source', 'watch', '觀察中 ' + (rows.length - held))
+      + '<span class="dim" aria-hidden="true">｜</span>'
+      + pick('market', 'us', '美股') + pick('market', 'tw', '台股')
+    : '';
+}
+
+function onTargetFilterClick(event) {
+  var button = event.target.closest('[data-kind]');
+  if (!button) return;
+  var kind = button.dataset.kind;
+  /* 市場徽章可再點一次取消；來源是三選一，不能取消。 */
+  targetState[kind] = (kind === 'market' && targetState.market === button.dataset.value)
+    ? 'all' : button.dataset.value;
+  paintTargets(byId('targets-body'));
+}
+
+function focusWatchForm() {
+  var form = byId('watch-form');
+  form.scrollIntoView({behavior: 'smooth', block: 'center'});
+  form.symbol.focus();
+}
+
 async function renderTargets(element) {
   var targets = await getJson('/targets');
-  if (!targets || !targets.length) {
-    element.innerHTML = emptyStateHtml('沒有可評估的標的 —— 先到「資料」分頁匯入 CSV 或新增手動持倉。', 'winner');
+  targetState.rows = targets || [];
+  if (!targetState.rows.length) {
+    element.innerHTML = emptyCtaHtml('還沒有可評估的標的。匯入券商 CSV、手動輸入一檔持股，或在下方加一檔觀察。',
+      '#manage/import', '去匯入', 'winner');
+    renderTargetFilters();
     return;
   }
-  element.innerHTML = targetsTableHtml(targets);
+  paintTargets(element);
+}
+
+function paintTargets(element) {
+  var rows = visibleTargets();
+  element.innerHTML = rows.length ? targetsTableHtml(rows) : emptyStateHtml('這個篩選下沒有標的。');
   bindRowToggles(element);
+  renderTargetFilters();
 }
 
 function targetsTableHtml(targets) {
@@ -683,7 +879,7 @@ function targetsTableHtml(targets) {
     + '<th class="num">' + head[1] + '</th>'
     + '<th class="num opt">' + head[2] + '</th>'
     + '<th class="num opt">' + head[3] + '</th>'
-    + '<th class="num">' + head[4] + '</th>'
+    + '<th class="num opt">' + head[4] + '</th>'
     + '<th class="num">' + head[5] + '</th>'
     + '<th class="num">' + head[6] + '</th>'
     + '<th class="opt">' + head[7] + '</th>'
@@ -701,12 +897,12 @@ function isTargetReached(target) {
 function targetMainRowHtml(target, index) {
   var reached = isTargetReached(target);
   return '<tr class="row-main' + (reached ? ' hit' : '') + '" data-toggle="' + index + '" tabindex="0">'
-    + '<td class="sym"><span class="caret">&#9656;</span> ' + esc(target.symbol)
-    + (reached ? ' <span class="badge ok">已到價</span>' : '') + '</td>'
+    + '<td class="sym"><span class="caret">&#9656;</span> ' + symHtml(target.symbol)
+    + (reached ? ' <span class="badge hit">已到價</span>' : '') + '</td>'
     + numCell(moneyFor(target.last_price, target.symbol))
     + numCell(moneyFor(target.average_cost, target.symbol), 'opt')
-    + numCell(signedPercent(target.discount_to_average_cost_percent, 1), 'opt')
-    + numCell(moneyFor(target.reference_price, target.symbol))
+    + numCell(signedPercent(target.discount_to_average_cost_percent, 1, target.symbol), 'opt')
+    + numCell(moneyFor(target.reference_price, target.symbol), 'opt')
     + numCell(moneyFor(target.buy_below, target.symbol))
     + numCell(gapHtml(target.gap_to_buy_below_percent))
     + '<td class="opt">' + basisHtml(target) + '</td></tr>';
@@ -714,8 +910,13 @@ function targetMainRowHtml(target, index) {
 
 function gapHtml(gap) {
   if (!isNumber(gap)) return '<span class="dim">' + DASH + '</span>';
-  if (gap <= 0) return '<span class="up">已到價 ' + gap.toFixed(1) + '%</span>';
-  return '<span class="' + (gap <= 15 ? 'near' : 'dim') + '">還差 ' + gap.toFixed(1) + '%</span>';
+  var reached = gap <= 0;
+  /* 越滿＝越接近入手價；差 0% 以內整條填滿並改品牌色。 */
+  var fill = reached ? 100 : Math.max(6, Math.min(100, 100 - gap * 4.5));
+  var label = reached ? '已到價 ' + gap.toFixed(1) + '%' : '還差 ' + gap.toFixed(1) + '%';
+  return '<span class="gapbar"><span class="gaptrack"><span class="gapfill' + (reached ? ' hit' : '')
+    + '" style="width:' + fill.toFixed(0) + '%"></span></span><span class="gaplabel'
+    + (reached ? ' hit' : '') + '">' + label + '</span></span>';
 }
 
 function basisHtml(target) {
@@ -781,7 +982,7 @@ function peOptionRowHtml(candidate, currency) {
     + numCell(decimals(candidate.target_pe, 1, 1))
     + numCell(money(candidate.fair_value, currency))
     + numCell(money(candidate.buy_below, currency))
-    + numCell(signedPercent(candidate.upside_percent, 0))
+    + numCell(signedPercent(candidate.upside_percent, 0, currency))
     + '<td>' + tierHtml(candidate) + hintHtml(candidate) + '</td></tr>';
 }
 
@@ -973,7 +1174,7 @@ function pricePositionHtml(target) {
     + '<dt>52 週低</dt><dd>' + moneyFor(target.week52_low, target.symbol) + '</dd>'
     + '<dt>52 週高</dt><dd>' + moneyFor(target.week52_high, target.symbol) + '</dd>'
     + '<dt>區間位置</dt><dd>' + plainPercent(target.range_percentile, 0) + '</dd>'
-    + '<dt>vs 200 日均線</dt><dd>' + signedPercent(target.premium_to_two_hundred_day_percent, 2) + '</dd>'
+    + '<dt>vs 200 日均線</dt><dd>' + signedPercent(target.premium_to_two_hundred_day_percent, 2, target.symbol) + '</dd>'
     + '</dl>' + rangeBarHtml(target);
 }
 
@@ -1019,9 +1220,10 @@ function loadPositions() {
 
 async function renderPortfolio(element) {
   var portfolio = await getJson('/portfolio');
+  noteHomeCurrency(portfolio);
   var positions = portfolio.positions || [];
   element.innerHTML = summaryCardsHtml(portfolio.summary || {})
-    + (positions.length ? positionsTableHtml(positions) : emptyStateHtml('目前沒有持倉。', 'thumbsup'))
+    + (positions.length ? positionsTableHtml(positions) : NO_POSITIONS_CTA)
     + weightDonutHtml(positions)
     + sectorExposureHtml(portfolio.sector_exposure || [])
     + homeCurrencyHtml(portfolio.home_currency_summary || {}, positions);
@@ -1136,7 +1338,7 @@ function homeCurrencyTableHtml(code, positions) {
   var rated = positions.filter(function (p) { return p.average_cost_rate != null; });
   if (!rated.length) return '';
   var rows = rated.map(function (p) {
-    return '<tr><td class="sym">' + esc(p.symbol) + '</td>'
+    return '<tr><td class="sym">' + symHtml(p.symbol) + '</td>'
       + '<td class="num">' + fxRate(p.average_cost_rate) + '</td>'
       + '<td class="num">' + homeAmount(p.cost_basis_home) + '</td>'
       + '<td class="num">' + signedHomeAmount(p.stock_gain_home) + '</td>'
@@ -1187,7 +1389,7 @@ function missingCostBasisHtml(summary) {
   return '<div class="notice"><strong>報酬率無法計算</strong>'
     + '：部分股數的買入價不在匯入範圍內（表格中標 <span class="warn-mark">*</span>）。'
     + '市值與權重已包含這些股數。<br>'
-    + '補法：重新匯出涵蓋該筆買進的 CSV，或到「資料」分頁手動輸入該代號的總股數與整體均價。</div>';
+    + '補法：重新匯出涵蓋該筆買進的 CSV，或到「提醒與資料 › 手動持倉」輸入該代號的總股數與整體均價。</div>';
 }
 
 function positionsTableHtml(positions) {
@@ -1205,13 +1407,13 @@ function unpricedMark(position) {
 }
 
 function positionRowHtml(position) {
-  return '<tr><td class="sym">' + esc(position.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(position.symbol) + '</td>'
     + numCell(shares(position.quantity) + unpricedMark(position))
     + numCell(moneyFor(position.average_cost, position.symbol) + unpricedMark(position), 'opt')
     + numCell(moneyFor(position.last_price, position.symbol))
     + numCell(moneyFor(position.market_value, position.symbol))
     + numCell(signedMoney(position.unrealized_gain, currencyForSymbol(position.symbol)))
-    + numCell(signedPercent(position.unrealized_return_percent, 2))
+    + numCell(signedPercent(position.unrealized_return_percent, 2, position.symbol))
     + numCell(plainPercent(position.weight_percent, 1), 'opt')
     + '<td class="opt dim">' + esc(position.sector || DASH) + '</td></tr>';
 }
@@ -1328,7 +1530,7 @@ async function renderRisk(element) {
   }
   element.innerHTML = '<div class="cards">'
     + cardHtml('年化波動度', plainPercent(metrics.annualized_volatility_percent, 1))
-    + cardHtml('最大回撤', '<span class="down">' + plainPercent(metrics.max_drawdown_percent, 1) + '</span>')
+    + cardHtml('最大回撤', '<span class="neg-' + marketOf() + '">▼ ' + plainPercent(metrics.max_drawdown_percent, 1) + '</span>')
     + cardHtml('Sharpe Ratio', ratio(metrics.sharpe_ratio, 2))
     + cardHtml('與 SPY 相關性', ratio(metrics.benchmark_correlation, 2))
     + cardHtml('觀察交易日', isNumber(metrics.observation_days) ? metrics.observation_days + ' 天' : DASH)
@@ -1363,10 +1565,10 @@ function receiptsTableHtml(receipts) {
 }
 
 function receiptRowHtml(receipt) {
-  return '<tr><td class="sym">' + esc(receipt.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(receipt.symbol) + '</td>'
     + numCell(moneyFor(receipt.gross_amount, receipt.symbol))
-    + numCell('<span class="down">-' + moneyFor(receipt.withheld_amount, receipt.symbol) + '</span>')
-    + numCell('<span class="up">' + moneyFor(receipt.net_amount, receipt.symbol) + '</span>')
+    + numCell('<span class="dim">-' + moneyFor(receipt.withheld_amount, receipt.symbol) + '</span>')
+    + numCell('<span>' + moneyFor(receipt.net_amount, receipt.symbol) + '</span>')
     + numCell(plainPercent(receipt.effective_withholding_percent, 1), 'opt') + '</tr>';
 }
 
@@ -1394,8 +1596,8 @@ function receiptsTotalRowHtml(receipts) {
     var c = group.currency;
     return '<tr class="total"><td>' + totalLabel(c, groups.length) + '</td>'
       + numCell(money(gross, c))
-      + numCell('<span class="down">-' + money(withheld, c) + '</span>')
-      + numCell('<span class="up">' + money(sumBy(group.rows, 'net_amount'), c) + '</span>')
+      + numCell('<span class="dim">-' + money(withheld, c) + '</span>')
+      + numCell('<span>' + money(sumBy(group.rows, 'net_amount'), c) + '</span>')
       + numCell(plainPercent(gross ? withheld / gross * 100 : null, 1), 'opt') + '</tr>';
   }).join('');
 }
@@ -1410,11 +1612,11 @@ function forecastsTableHtml(forecasts) {
 }
 
 function forecastRowHtml(forecast) {
-  return '<tr><td class="sym">' + esc(forecast.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(forecast.symbol) + '</td>'
     + numCell(shares(forecast.quantity), 'opt')
     + numCell(moneyFor(forecast.annual_rate_per_share, forecast.symbol), 'opt')
     + numCell(moneyFor(forecast.gross_annual_income, forecast.symbol))
-    + numCell('<span class="up">' + moneyFor(forecast.net_annual_income, forecast.symbol) + '</span>') + '</tr>';
+    + numCell('<span>' + moneyFor(forecast.net_annual_income, forecast.symbol) + '</span>') + '</tr>';
 }
 
 function forecastsTotalRowHtml(forecasts) {
@@ -1424,7 +1626,7 @@ function forecastsTotalRowHtml(forecasts) {
     return '<tr class="total"><td>' + totalLabel(c, groups.length) + '</td>'
       + '<td class="num opt"></td><td class="num opt"></td>'
       + numCell(money(sumBy(group.rows, 'gross_annual_income'), c))
-      + numCell('<span class="up">' + money(sumBy(group.rows, 'net_annual_income'), c) + '</span>') + '</tr>';
+      + numCell('<span>' + money(sumBy(group.rows, 'net_annual_income'), c) + '</span>') + '</tr>';
   }).join('');
 }
 
@@ -1447,7 +1649,7 @@ async function renderWatchlist(element) {
 
 function watchRowHtml(row) {
   return '<tr' + (row.state === 'buy_triggered' ? ' class="hit"' : '') + '>'
-    + '<td class="sym">' + esc(row.symbol) + '</td>'
+    + '<td class="sym">' + symHtml(row.symbol) + '</td>'
     + numCell(moneyFor(row.last_price, row.symbol))
     + numCell(moneyFor(row.buy_below, row.symbol))
     + numCell(moneyFor(row.sell_above, row.symbol), 'opt')
@@ -1491,16 +1693,24 @@ async function submitWatchRule(event) {
   if (saved) form.reset();
 }
 
-async function runCheck() {
-  var output = byId('check-result');
+async function runCheck(target) {
+  var output = target && target.nodeType === 1 ? target : byId('check-result');
   output.innerHTML = '<div class="state">檢查中…</div>';
   try {
     var result = await sendJson('POST', '/check', {resend: false});
     output.innerHTML = checkResultHtml(result);
     loadWatchlist();
   } catch (error) {
-    setError(output, error, runCheck);
+    setError(output, error, function () { runCheck(output); });
   }
+}
+
+/** 到價提醒與智慧提醒合成一顆按鈕：使用者不需要知道內部分成兩種檢查。 */
+function runAllChecks() {
+  var holder = byId('check-result');
+  holder.innerHTML = '<div id="check-result-price"></div><div id="check-result-signal" style="margin-top:8px"></div>';
+  runCheck(byId('check-result-price'));
+  runSignalCheck(byId('check-result-signal'));
 }
 
 function checkResultHtml(result) {
@@ -1520,11 +1730,20 @@ function checkResultHtml(result) {
 
 /* ---------- 智慧提醒 ---------- */
 
-function loadSignals() {
+function loadHistoryView() {
   loadInto(byId('signals-body'), renderSignals);
+  loadInto(byId('signal-history-body'), renderSignalHistory);
+}
+
+function loadNotifyView() {
   loadInto(byId('subscriptions-body'), renderSubscriptions);
   loadInto(byId('thresholds-body'), renderThresholds);
-  loadInto(byId('signal-history-body'), renderSignalHistory);
+}
+
+/* 寫入後各處的 callback 仍叫 loadSignals／loadWatchlist，保留名字，載入對應區塊。 */
+function loadSignals() {
+  loadHistoryView();
+  loadNotifyView();
 }
 
 async function renderSignals(element) {
@@ -1558,7 +1777,7 @@ function staleFeedHtml(stale) {
 function signalRowHtml(row) {
   var labels = (row.conditions || []).map(function (c) { return esc(c.label); }).join('、');
   return '<tr' + (row.direction === 'BUY' ? ' class="hit"' : '') + '>'
-    + '<td class="sym">' + esc(row.symbol)
+    + '<td class="sym">' + symHtml(row.symbol)
     + (row.muted ? ' <span class="badge">不推播</span>' : '') + '</td>'
     + '<td>' + signalDirectionHtml(row.direction) + '</td>'
     + numCell(moneyFor(row.last_price, row.symbol))
@@ -1589,7 +1808,7 @@ async function renderSubscriptions(element) {
 
 function subscriptionRowHtml(row) {
   var next = row.enabled ? '0' : '1';
-  return '<tr><td class="sym">' + esc(row.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(row.symbol) + '</td>'
     + '<td class="dim">' + esc((row.sources || []).join('、')) + '</td>'
     + '<td>' + (row.enabled ? '<span class="badge ok">開</span>' : '<span class="badge">關</span>') + '</td>'
     + '<td><button class="btn tiny" type="button" data-subscribe="' + esc(row.symbol) + '" data-enable="' + next + '">'
@@ -1631,7 +1850,7 @@ async function renderThresholds(element) {
 }
 
 function thresholdRowHtml(row) {
-  return '<tr><td class="sym">' + esc(row.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(row.symbol) + '</td>'
     + numCell(fmtNum(row.average_cost_discount_percent))
     + numCell(fmtNum(row.short_trend_bias_percent))
     + numCell(fmtNum(row.rsi_oversold))
@@ -1682,15 +1901,15 @@ async function renderSignalHistory(element) {
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'
     + '<th>日期</th><th>代號</th><th>方向</th><th>條件</th><th class="num">當時價</th></tr></thead><tbody>'
     + rows.map(function (row) {
-        return '<tr><td>' + esc(row.event_date) + '</td><td class="sym">' + esc(row.symbol) + '</td>'
+        return '<tr><td>' + esc(row.event_date) + '</td><td class="sym">' + symHtml(row.symbol) + '</td>'
           + '<td>' + signalDirectionHtml(row.direction) + '</td>'
           + '<td class="dim">' + esc((row.conditions || '').replace(/^[^:]*:/, '')) + '</td>'
           + numCell(moneyFor(row.last_price, row.symbol)) + '</tr>';
       }).join('') + '</tbody></table></div>';
 }
 
-async function runSignalCheck() {
-  var output = byId('signals-check-result');
+async function runSignalCheck(target) {
+  var output = target && target.nodeType === 1 ? target : byId('check-result');
   output.innerHTML = '<div class="state">檢查中…</div>';
   try {
     var result = await sendJson('POST', '/signals/check', {resend: false});
@@ -1704,15 +1923,21 @@ async function runSignalCheck() {
     loadInto(byId('signals-body'), renderSignals);
     loadInto(byId('signal-history-body'), renderSignalHistory);
   } catch (error) {
-    setError(output, error, runSignalCheck);
+    setError(output, error, function () { runSignalCheck(output); });
   }
 }
 
 /* ---------- 資料：CSV 匯入 ---------- */
 
-function loadDataTab() {
+function loadImportView() {
   buildImportPanels().catch(function (error) { setErrorHtml(byId('import-panels'), error); });
-  loadInto(byId('manual-body'), renderManualPositions);
+}
+
+function loadManualView() { loadInto(byId('manual-body'), renderManualPositions); }
+
+/* 匯入或手動寫入之後：持股相關的區塊都要重抓。 */
+function loadDataTab() {
+  loadManualView();
   loadInto(byId('assumptions-body'), renderAssumptions);
 }
 
@@ -1838,7 +2063,7 @@ function importWarningsHtml(warnings) {
       + '股息紀錄顯示曾持有 ' + shares(warning.shares_implied_by_dividend)
       + ' 股，但匯入的買進只算出 ' + shares(warning.shares_from_imported_trades)
       + ' 股，缺少 ' + shares(warning.missing_shares) + ' 股的成本基礎。'
-      + '請補匯入更早的區間，或在下方「手動持倉」補上完整股數與均價。</div></div>';
+      + '請補匯入更早的區間，或到「提醒與資料 › 手動持倉」補上完整股數與均價。</div></div>';
   }).join('');
 }
 
@@ -1877,7 +2102,7 @@ async function renderManualPositions(element) {
 }
 
 function manualRowHtml(position) {
-  return '<tr><td class="sym">' + esc(position.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(position.symbol) + '</td>'
     + numCell(shares(position.quantity))
     + numCell(moneyFor(position.average_cost, position.symbol))
     + '<td class="opt dim">' + esc(position.note || '') + '</td>'
@@ -1941,7 +2166,7 @@ function assumptionsTableHtml(rows) {
 }
 
 function assumptionRowHtml(row) {
-  return '<tr data-symbol="' + esc(row.symbol) + '"><td class="sym">' + esc(row.symbol) + '</td>'
+  return '<tr data-symbol="' + esc(row.symbol) + '"><td class="sym">' + symHtml(row.symbol) + '</td>'
     + ASSUMPTION_FIELDS.map(function (field) { return numCell(assumptionInputHtml(row, field)); }).join('')
     + '<td class="opt">' + assumptionSourceHtml(row.source) + '</td>'
     + numCell(ratio(row.historical_median_pe, 1), 'opt')
@@ -2014,36 +2239,174 @@ async function submitAssumptionOverride(event) {
   if (saved) form.reset();
 }
 
+/* ---------- 今天 ---------- */
+
+/** 四個區塊各自載入、各自失敗：最慢的那個不會卡住其他。 */
+function loadToday() {
+  byId('today-body').innerHTML = '<div id="today-hero" class="panel"></div>'
+    + '<div class="today-grid"><div id="today-attention" class="panel"></div>'
+    + '<div class="today-side"><div id="today-near" class="panel"></div><div id="today-recent" class="panel"></div></div></div>';
+  var shared = {
+    targets: getJson('/targets'),
+    signals: getJson('/signals'),
+    history: getJson('/signals/history')
+  };
+  Object.keys(shared).forEach(function (key) { shared[key].catch(function () {}); });
+  loadInto(byId('today-hero'), renderTodayHero);
+  loadInto(byId('today-attention'), function (el) { return renderTodayAttention(el, shared); });
+  loadInto(byId('today-near'), function (el) { return renderTodayNear(el, shared); });
+  loadInto(byId('today-recent'), function (el) { return renderTodayRecent(el, shared); });
+}
+
+function twdText(value, signed) {
+  var sign = signed ? (value >= 0 ? '+' : '-') : '';
+  return sign + 'NT$' + decimals(Math.abs(value), 0, 0);
+}
+
+async function renderTodayHero(element) {
+  var portfolio = await getJson('/portfolio');
+  noteHomeCurrency(portfolio);
+  var summary = portfolio.summary || {};
+  var sub = summary.market_subtotals;
+  var gainUsd = summary.unrealized_gain;
+  var rate = sub ? sub.usd_to_twd : 1;
+  var total = sub ? twdText(sub.market_value_twd) : money(summary.market_value, 'USD');
+  var gainText = '';
+  if (isNumber(gainUsd)) {
+    var gain = gainUsd * rate;
+    var amount = sub ? twdText(gain, true) : (gain >= 0 ? '+' : '-') + '$' + decimals(Math.abs(gain), 2, 2);
+    var pct = isNumber(summary.unrealized_return_percent)
+      ? '（' + (summary.unrealized_return_percent >= 0 ? '+' : '') + summary.unrealized_return_percent.toFixed(1) + '%）' : '';
+    gainText = '<span class="hero-gain">' + trendHtml(amount + pct, gain) + '</span>';
+  }
+  element.innerHTML = '<div class="hero-top"><span class="dim">' + (sub ? '總資產（折合台幣）' : '總資產')
+    + '</span>' + (sub ? '<span class="hint">以 USD/TWD ' + decimals(sub.usd_to_twd, 2, 2) + ' 折算</span>' : '')
+    + '</div><div class="hero-num">' + total + gainText + '</div>'
+    + (sub ? allocationHtml(sub) : '');
+}
+
+function allocationHtml(sub) {
+  var us = sub.us.market_value;
+  var tw = sub.tw.market_value / sub.usd_to_twd;
+  var all = us + tw;
+  var usPct = all ? us / all * 100 : 0;
+  return '<div class="alloc" role="img" aria-label="美股 ' + usPct.toFixed(0) + '%，台股 ' + (100 - usPct).toFixed(0)
+    + '%"><i class="a-us" style="width:' + usPct.toFixed(1) + '%"></i><i class="a-tw" style="width:'
+    + (100 - usPct).toFixed(1) + '%"></i></div><div class="alloc-legend"><span>' + marketBadgeHtml('AAPL')
+    + ' ' + money(sub.us.market_value, 'USD') + '　' + usPct.toFixed(0) + '%</span><span>' + marketBadgeHtml('2330.TW')
+    + ' ' + money(sub.tw.market_value, 'TWD') + '　' + (100 - usPct).toFixed(0) + '%</span></div>';
+}
+
+function attentionRowHtml(badgeClass, badge, symbol, text, href, go) {
+  return '<a class="att-row" href="' + href + '"><span class="badge ' + badgeClass + '">' + badge + '</span>'
+    + '<span class="att-text"><b>' + symHtml(symbol) + '</b><span>' + esc(text) + '</span></span>'
+    + '<span class="go">' + go + ' →</span></a>';
+}
+
+async function renderTodayAttention(element, shared) {
+  var targets = await shared.targets;
+  var scan = await shared.signals;
+  var rows = [];
+  (targets || []).filter(isTargetReached).forEach(function (target) {
+    rows.push(attentionRowHtml('hit', '已到價', target.symbol,
+      '現價 ' + moneyFor(target.last_price, target.symbol) + '，低於入手價 ' + moneyFor(target.buy_below, target.symbol),
+      '#stocks/targets', '看入手價'));
+  });
+  ((scan && scan.signals) || []).filter(function (row) { return !row.muted; }).forEach(function (row) {
+    rows.push(attentionRowHtml('info', '智慧提醒', row.symbol, row.summary || '', '#manage/history', '看紀錄'));
+  });
+  ((scan && scan.stale) || []).forEach(function (item) {
+    rows.push(attentionRowHtml('warn', '行情過期', item.symbol,
+      '資料已過期（' + item.describe_age + '），已略過；這不代表市場平靜', '#manage/history', '了解'));
+  });
+  element.innerHTML = '<div class="panel-head"><h2>需要注意</h2><span class="hint">'
+    + (rows.length ? rows.length + ' 件' : '') + '</span></div>'
+    + (rows.length ? rows.join('') : emptyStateHtml('目前沒有需要注意的事。淡定。'));
+}
+
+async function renderTodayNear(element, shared) {
+  var targets = (await shared.targets) || [];
+  var near = targets.filter(function (target) { return isNumber(target.gap_to_buy_below_percent); })
+    .sort(function (a, b) { return a.gap_to_buy_below_percent - b.gap_to_buy_below_percent; }).slice(0, 4);
+  element.innerHTML = '<div class="panel-head"><h2>離入手價最近</h2><span class="spacer"></span>'
+    + '<a href="#stocks/targets" class="hint">全部 →</a></div>'
+    + (near.length ? near.map(function (target) {
+        return '<div class="near-row"><b>' + symHtml(target.symbol) + '</b>' + gapHtml(target.gap_to_buy_below_percent) + '</div>';
+      }).join('') : emptyStateHtml('還沒有可評估的標的。'));
+}
+
+async function renderTodayRecent(element, shared) {
+  var rows = ((await shared.history) || []).slice(0, 4);
+  element.innerHTML = '<div class="panel-head"><h2>近期觸發</h2><span class="spacer"></span>'
+    + '<a href="#manage/history" class="hint">全部 →</a></div>'
+    + (rows.length ? rows.map(function (row) {
+        return '<div class="recent-row"><span class="d">' + esc(String(row.event_date || '').slice(5).replace('-', '/'))
+          + '</span><span>' + symHtml(row.symbol) + ' ' + signalDirectionHtml(row.direction) + '</span></div>';
+      }).join('') : emptyStateHtml('還沒有任何觸發紀錄。'));
+}
+
 /* ---------- 分頁切換 ---------- */
 
 var LOADERS = {
-  targets: loadTargets,
+  today: function () { loadToday(); },
   positions: loadPositions,
-  risk: loadRisk,
+  targets: loadTargetsView,
   dividends: loadDividends,
-  watchlist: loadWatchlist,
-  signals: loadSignals,
-  data: loadDataTab
+  risk: loadRisk,
+  history: loadHistoryView,
+  notify: loadNotifyView,
+  import: loadImportView,
+  manual: loadManualView
 };
 
-function activeTabName() {
-  var name = (location.hash || '').replace(/^#/, '');
-  return TABS.indexOf(name) >= 0 ? name : 'targets';
+/** #stocks/targets → {tab, view}；只寫 #stocks 就取該分頁上次看的（沒有就第一個）。 */
+function currentRoute() {
+  var parts = (location.hash || '').replace(/^#/, '').split('/');
+  var tab = TAB_NAMES.indexOf(parts[0]) >= 0 ? parts[0] : 'today';
+  var views = TAB_VIEWS[tab].map(function (entry) { return entry[0]; });
+  if (!views.length) return {tab: tab, view: 'today'};
+  var view = views.indexOf(parts[1]) >= 0 ? parts[1] : (lastViewOf[tab] || views[0]);
+  return {tab: tab, view: view};
+}
+
+function renderSubnav(route) {
+  var nav = byId('subnav');
+  var entries = TAB_VIEWS[route.tab];
+  nav.hidden = !entries.length;
+  nav.innerHTML = entries.map(function (entry) {
+    return '<a href="#' + route.tab + '/' + entry[0] + '" role="tab" aria-selected="'
+      + (entry[0] === route.view) + '">' + esc(entry[1]) + '</a>';
+  }).join('');
+}
+
+function stampUpdated() {
+  var now = new Date();
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  byId('updated').textContent = '更新於 ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
 }
 
 function showActiveTab() {
-  var active = activeTabName();
-  TABS.forEach(function (name) {
-    byId('tab-' + name).hidden = name !== active;
-    byId('link-' + name).classList.toggle('active', name === active);
+  var route = currentRoute();
+  lastViewOf[route.tab] = route.view;
+  ALL_VIEWS.forEach(function (name) { byId('view-' + name).hidden = name !== route.view; });
+  TAB_NAMES.forEach(function (name) {
+    var link = byId('link-' + name);
+    link.classList.toggle('active', name === route.tab);
+    if (name === route.tab) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+    link.setAttribute('href', '#' + name + (lastViewOf[name] ? '/' + lastViewOf[name] : ''));
   });
-  LOADERS[active]();
+  renderSubnav(route);
+  stampUpdated();
+  LOADERS[route.view]();
 }
 
 function showLoginGate(show) {
   byId('login-gate').hidden = !show;
   document.querySelector('header .tabs').hidden = show;
-  if (show) TABS.forEach(function (name) { byId('tab-' + name).hidden = true; });
+  if (show) {
+    byId('subnav').hidden = true;
+    ALL_VIEWS.forEach(function (name) { byId('view-' + name).hidden = true; });
+  }
 }
 
 async function submitLogin(event) {
@@ -2071,14 +2434,13 @@ async function needsLogin() {
 }
 
 async function init() {
-  if (TABS.indexOf((location.hash || '').replace(/^#/, '')) < 0) {
-    history.replaceState(null, '', '#targets');
-  }
+  if (!location.hash) history.replaceState(null, '', '#today');
   window.addEventListener('hashchange', showActiveTab);
   byId('refresh').addEventListener('click', showActiveTab);
   byId('watch-form').addEventListener('submit', submitWatchRule);
-  byId('check-button').addEventListener('click', runCheck);
-  byId('signals-check-button').addEventListener('click', runSignalCheck);
+  byId('check-button').addEventListener('click', runAllChecks);
+  byId('target-filters').addEventListener('click', onTargetFilterClick);
+  byId('add-watch-button').addEventListener('click', focusWatchForm);
   byId('threshold-form').addEventListener('submit', submitThreshold);
   byId('subscription-form').addEventListener('submit', submitSubscription);
   byId('manual-form').addEventListener('submit', submitManualPosition);

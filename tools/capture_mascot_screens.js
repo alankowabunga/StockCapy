@@ -98,11 +98,12 @@ function readmeHtml() {
   fs.mkdirSync(OUT, { recursive: true });
   const browser = await chromium.launch();
   await web(browser, '01-login.png', BASE_AUTH + '/', { height: 700 });
-  await web(browser, '02-targets-empty.png', BASE + '/#targets', { height: 520 });
-  await web(browser, '03-positions-empty.png', BASE + '/#positions', { height: 900 });
-  await web(browser, '04-dividends-empty.png', BASE + '/#dividends', { height: 640 });
-  await web(browser, '05-watchlist-empty.png', BASE + '/#watchlist', { height: 640 });
-  await web(browser, '06-price-alert-triggered.png', BASE + '/#watchlist', {
+  await web(browser, '02-today.png', BASE + '/#today', { height: 640 });
+  await web(browser, '03-targets-empty.png', BASE + '/#stocks/targets', { height: 560 });
+  await web(browser, '04-positions-empty.png', BASE + '/#stocks/positions', { height: 700 });
+  await web(browser, '05-dividends-empty.png', BASE + '/#stocks/dividends', { height: 640 });
+  await web(browser, '06-notify-watchlist-empty.png', BASE + '/#manage/notify', { height: 700 });
+  await web(browser, '07-price-alert-triggered.png', BASE + '/#manage/notify', {
     height: 640,
     fullPage: false,
     after: async (page) => {
@@ -118,21 +119,23 @@ function readmeHtml() {
       await page.locator('#check-result').scrollIntoViewIfNeeded();
     },
   });
-  await web(browser, '07-signals-empty.png', BASE + '/#signals', { height: 700 });
-  await web(browser, '08-data-empty-and-import.png', BASE + '/#data', {
-    height: 700,
+  await web(browser, '08-import-success.png', BASE + '/#manage/import', {
+    height: 640,
+    fullPage: false,
     after: async (page) => {
       await page.evaluate(() => {
         var host = document.querySelector('[data-import-result]');
         host.hidden = false;
         host.innerHTML = importResultHtml({ parsed: 42, inserted: 42, activity_breakdown: { Buy: 31, Dividend: 9, Sell: 2 }, warnings: [] });
       });
+      await page.locator('[data-import-result]').scrollIntoViewIfNeeded();
     },
   });
-  await web(browser, '09-desktop-targets-empty.png', BASE + '/#targets', { width: 1100, height: 560, fullPage: false });
-  await mock(browser, '10-phone-home-screen.png', homeScreenHtml(), 430, 860);
-  await mock(browser, '11-browser-tab.png', browserTabHtml(), 760, 150);
-  await mock(browser, '12-telegram-bot.png', telegramHtml(), 430, 420);
-  await mock(browser, '13-github-readme.png', readmeHtml(), 960, 430);
+  await web(browser, '09-manual-positions-empty.png', BASE + '/#manage/manual', { height: 700 });
+  await web(browser, '10-desktop-targets-empty.png', BASE + '/#stocks/targets', { width: 1100, height: 560, fullPage: false });
+  await mock(browser, '11-phone-home-screen.png', homeScreenHtml(), 430, 860);
+  await mock(browser, '12-browser-tab.png', browserTabHtml(), 760, 150);
+  await mock(browser, '13-telegram-bot.png', telegramHtml(), 430, 420);
+  await mock(browser, '14-github-readme.png', readmeHtml(), 960, 430);
   await browser.close();
 })();

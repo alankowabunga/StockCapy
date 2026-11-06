@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw
 SOURCE = Path("assets/app-icon-source.jpg")
 STATIC = Path("src/portfolio/web/static")
 PWA_ICONS = STATIC / "icons"
+ASSETS = SOURCE.parent
 
 # The gold frame of the artwork, as a square (left, top, right, bottom) in source pixels.
 FRAME = (160, 165, 1890, 1895)
@@ -71,6 +72,14 @@ def main(output_dir: Path = PWA_ICONS) -> None:
     for name, image in written.items():
         image.save(output_dir / name)
         print(f"wrote {output_dir / name} ({image.size[0]}x{image.size[1]})")
+    # Brand images for the README and docs: the framed artwork, and a small face-only mark.
+    brand = {
+        "capy-logo.png": _framed(source, 512),
+        "capy-mark.png": source.crop(FACE).resize((128, 128), Image.LANCZOS),
+    }
+    for name, image in brand.items():
+        image.save(ASSETS / name)
+        print(f"wrote {ASSETS / name} ({image.size[0]}x{image.size[1]})")
     favicon = source.crop(FACE).resize((64, 64), Image.LANCZOS)
     favicon.save(output_dir.parent / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)])
     print(f"wrote {output_dir.parent / 'favicon.ico'}")

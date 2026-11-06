@@ -83,6 +83,7 @@ main{padding:12px; max-width:1180px; margin:0 auto}
 .state{padding:14px 2px; color:var(--dim); font-size:13px}
 .state-art{display:flex; flex-direction:column; align-items:center; gap:10px; padding:10px 2px 16px; text-align:center}
 .state-art img{display:block; height:auto; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
+.cheer{float:right; width:88px; height:auto; margin:-10px -2px 4px 10px}
 .state-art img.sticker{border-radius:0; box-shadow:none; filter:drop-shadow(0 6px 8px rgba(60,35,10,.22))}
 .login-hero{display:block; width:100%; max-width:340px; height:auto; margin:0 auto 12px; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
 footer{
@@ -569,6 +570,13 @@ function emptyStateHtml(message, art) {
   return '<div class="state state-art"><img' + (spec[4] ? ' class="sticker"' : '')
     + ' src="/art/' + spec[0] + '" alt="" width="' + spec[2] + '" height="' + spec[3]
     + '" style="width:' + spec[1] + 'px;max-width:100%"><div>' + esc(message) + '</div></div>';
+}
+
+// A small sticker floated to the right of a success box (import done, price reached).
+function cheerHtml(art) {
+  var spec = EMPTY_ART[art];
+  return '<img class="sticker cheer" src="/art/' + spec[0] + '" alt="" width="' + spec[2]
+    + '" height="' + spec[3] + '">';
 }
 
 /* ---------- API ---------- */
@@ -1503,7 +1511,7 @@ function checkResultHtml(result) {
       + esc(alert.direction) + '</span> ' + esc(alert.headline)
       + ' <span class="dim">目標 ' + moneyFor(alert.target_price, alert.symbol) + ' / 現價 ' + moneyFor(alert.last_price, alert.symbol) + '</span></li>';
   }).join('');
-  return '<div class="box ok-box"><strong>觸發 ' + triggered.length + ' 筆</strong>'
+  return '<div class="box ok-box">' + cheerHtml('party') + '<strong>觸發 ' + triggered.length + ' 筆</strong>'
     + '<ul class="alert-list">' + items + '</ul>'
     + (result.notified ? '<span class="dim">桌面通知已送出。</span>'
                        : '<span class="warn-text">桌面通知發送失敗（osascript 不可用）。</span>')
@@ -1688,7 +1696,8 @@ async function runSignalCheck() {
     var result = await sendJson('POST', '/signals/check', {resend: false});
     var fresh = (result.fresh || []).length;
     var total = (result.signals || []).length;
-    output.innerHTML = '<div class="box ok-box"><strong>觸發 ' + total + ' 檔，新推播 ' + fresh + ' 檔</strong>'
+    output.innerHTML = '<div class="box ok-box">' + (fresh ? cheerHtml('party') : '')
+      + '<strong>觸發 ' + total + ' 檔，新推播 ' + fresh + ' 檔</strong>'
       + (fresh ? (result.notified ? ' <span class="dim">通知已送出。</span>'
                                   : ' <span class="warn-text">無可用通知管道。</span>')
                : ' <span class="dim">條件沒有變化，未重送。</span>') + '</div>';
@@ -1816,7 +1825,8 @@ function importResultHtml(result) {
   var chips = Object.keys(breakdown).map(function (key) {
     return '<span class="chip">' + esc(key) + ' <b>' + esc(breakdown[key]) + '</b></span>';
   }).join('');
-  return '<div class="box ok-box"><strong>解析 ' + esc(result.parsed) + ' 列，寫入 '
+  return '<div class="box ok-box">' + (result.inserted > 0 ? cheerHtml('thumbsup') : '')
+    + '<strong>解析 ' + esc(result.parsed) + ' 列，寫入 '
     + esc(result.inserted) + ' 列</strong>'
     + (chips ? '<div class="chips">' + chips + '</div>' : '') + '</div>'
     + importWarningsHtml(result.warnings || []);

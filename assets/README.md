@@ -26,8 +26,8 @@ StockCapy 的卡皮巴拉圖。**原圖**是 `*-source.jpg`（白底），其餘
 | `capy-logo.png` | 文件引用的金框 icon（與 `icon-512.png` 相同） |
 | `capy-mark.png` | 文件用的小頭像（扁平，透明底） |
 | `capy-avatar.png` | Telegram bot 頭像（到 BotFather 上傳，圓形裁切） |
-| `stickers/party.png` | README「智慧提醒」；網頁：股利頁沒有已領股利資料 |
-| `stickers/thumbsup.png` | README「第一次使用」；網頁：沒有持倉／手動持倉 |
+| `stickers/party.png` | README「智慧提醒」；網頁：股利頁沒有已領股利資料、價格提醒或智慧提醒「立即檢查」有新觸發時 |
+| `stickers/thumbsup.png` | README「第一次使用」；網頁：沒有持倉／手動持倉、匯入 CSV 成功時 |
 | `stickers/bull.png` | README「判斷入手價」；網頁：監控清單是空的 |
 | `stickers/winner.png` | README「快速開始」；網頁：入手價頁沒有標的 |
 
@@ -45,6 +45,7 @@ StockCapy 的卡皮巴拉圖。**原圖**是 `*-source.jpg`（白底），其餘
 
 ## 使用原則
 
+- 成功類的結果框（匯入完成、到價觸發）會在右側放一張小貼圖（`cheerHtml()`），沒有觸發或寫入 0 列時不放。
 - 失敗或錯誤訊息（「取不到…」「HTTP 409」）不放吉祥物，笑嘻嘻的圖會誤導。
 - 同一個畫面不要重複放同一張；空狀態各分頁分配了不同的圖（股利頁有兩個空狀態，只有第一個放圖）。
 - 小尺寸（favicon、左上角、頁尾）用扁平頭像，3D 圖縮小後細節會糊。

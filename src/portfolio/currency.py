@@ -28,6 +28,17 @@ def currency_symbol(code: str) -> str:
     return CURRENCY_SYMBOLS.get(normalized, f"{normalized} ")
 
 
+def format_money(amount: float, currency: str) -> str:
+    return f"{currency_symbol(currency)}{amount:,.2f}"
+
+
+def labeled_money(amount: float, currency: str) -> str:
+    """US output keeps its long-standing "USD $" label; others use their own sign."""
+    if (currency or "").upper() == "USD":
+        return f"USD ${amount:,.2f}"
+    return format_money(amount, currency)
+
+
 def pair_symbol(quote_currency: str, base_currency: str = BASE_CURRENCY) -> str:
     """Yahoo names the USD/TWD cross 'USDTWD=X'."""
     return f"{base_currency.upper()}{quote_currency.upper()}=X"

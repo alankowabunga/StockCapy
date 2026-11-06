@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Callable, Protocol
 
 from .config import MessageStyle
+from .currency import format_money, labeled_money
 from .signals import BUY, Signal, SignalCondition
 
 # Every narrated signal ends with this. The tool states facts about the user's own
@@ -77,7 +78,7 @@ def _plain_blocks(signal: Signal) -> list[list[str]]:
 
 def _compact_line(signal: Signal) -> str:
     emoji = "📉" if signal.direction == BUY else "📈"
-    price = f"{signal.currency} ${signal.last_price:,.2f}"
+    price = f"{labeled_money(signal.last_price, signal.currency)}"
     if signal.daily_change_percent is not None:
         price += f"（{signal.daily_change_percent:+.1f}%）"
     gloss = _plain(_headline_condition(signal))
@@ -118,7 +119,7 @@ def _full_card(signal: Signal, narrator: SignalNarrator | None) -> str:
         _price_block(signal),
         [
             f"📊 指標資料截至：{signal.snapshot.as_of or '日期未提供'}"
-            f"｜調整後收盤價 ${signal.snapshot.last_close:,.2f}",
+            f"｜調整後收盤價 {format_money(signal.snapshot.last_close, signal.currency)}",
             *(f"• {_clause(signal, condition)}" for condition in signal.conditions),
         ],
     ]
@@ -135,14 +136,14 @@ def _valuation_block(signal: Signal) -> list[str]:
     Mechanical model output (see product.md principle 1) — context, not advice."""
     if signal.reference_price is None:
         return []
-    line = f"📐 參考合理價 {signal.currency} ${signal.reference_price:,.2f}"
+    line = f"📐 參考合理價 {labeled_money(signal.reference_price, signal.currency)}"
     if signal.buy_below_price:
         gap = (signal.last_price / signal.buy_below_price - 1) * 100
         reached = (
             f"現價比入手價高 {gap:.0f}%，還沒到" if gap > 0
             else f"現價已到或低於入手價 {abs(gap):.0f}%"
         )
-        line += f"、入手價 ${signal.buy_below_price:,.2f}（{reached}）"
+        line += f"、入手價 {format_money(signal.buy_below_price, signal.currency)}（{reached}）"
     if signal.valuation_basis:
         line += f"。依據：{signal.valuation_basis}"
     return [line]
@@ -151,10 +152,10 @@ def _valuation_block(signal: Signal) -> list[str]:
 def _price_block(signal: Signal) -> list[str]:
     if signal.price_source == "quote":
         return [
-            f"💵 最新取得報價：{signal.currency} ${signal.last_price:,.2f}",
+            f"💵 最新取得報價：{labeled_money(signal.last_price, signal.currency)}",
             f"🕐 擷取時間：{signal.retrieved_at or '未記錄'}｜報價時間：來源未提供",
         ]
-    return [f"💵 備援價格：{signal.currency} ${signal.last_price:,.2f}（調整後收盤價，非即時報價）"]
+    return [f"💵 備援價格：{labeled_money(signal.last_price, signal.currency)}（調整後收盤價，非即時報價）"]
 
 
 def _summary(signal: Signal) -> str:
@@ -194,7 +195,7 @@ class LLMNarrator:
 
 def _facts_for_llm(signal: Signal) -> str:
     """The neutral fact string the model is allowed to rephrase — nothing more."""
-    price = f"${signal.last_price:,.2f}"
+    price = f"{format_money(signal.last_price, signal.currency)}"
     clauses = "、".join(_clause(signal, condition) for condition in signal.conditions)
     facts = f"{signal.symbol} 現價 {price}，觸發的規則：{clauses}。"
     caveat = _market_caveat(signal)
@@ -252,7 +253,7 @@ def _clause(signal: Signal, condition: SignalCondition) -> str:
         if signal.average_cost is None:
             return "低於你的持倉成本（持倉細節已隱藏）"
         discount = signal.discount_to_average_cost_percent or 0.0
-        return f"低於你的均價 {abs(discount):.1f}%（均價 ${signal.average_cost:,.2f}；設定門檻：低於至少 {thresholds.average_cost_discount_percent:g}%）"
+        return f"低於你的均價 {abs(discount):.1f}%（均價 {format_money(signal.average_cost, signal.currency)}；設定門檻：低於至少 {thresholds.average_cost_discount_percent:g}%）"
     if condition is SignalCondition.BELOW_SHORT_TREND:
         return f"低於 60 日均線 {abs(snapshot.bias_to_sma_short_percent or 0.0):.1f}%（設定門檻：至少 {thresholds.short_trend_bias_percent:g}%）"
     if condition is SignalCondition.ABOVE_SHORT_TREND:
@@ -262,9 +263,9 @@ def _clause(signal: Signal, condition: SignalCondition) -> str:
     if condition is SignalCondition.OVERBOUGHT_RSI:
         return f"RSI {snapshot.rsi:.1f}，高於設定門檻 {thresholds.rsi_overbought:g}"
     if condition is SignalCondition.BELOW_LOWER_BAND:
-        return f"指標收盤價達到或跌破布林下軌（${snapshot.bands.lower:,.2f}）"
+        return f"指標收盤價達到或跌破布林下軌（{format_money(snapshot.bands.lower, signal.currency)}）"
     if condition is SignalCondition.ABOVE_UPPER_BAND:
-        return f"指標收盤價達到或突破布林上軌（${snapshot.bands.upper:,.2f}）"
+        return f"指標收盤價達到或突破布林上軌（{format_money(snapshot.bands.upper, signal.currency)}）"
     return condition.label
 
 
@@ -276,7 +277,7 @@ def _plain_headline_lines(signal: Signal) -> list[str]:
     emoji = "📉" if signal.direction == BUY else "📈"
     body = "、".join(_plain_lead_fragment(signal, condition) for condition in signal.conditions)
     headline = f"{emoji} {signal.symbol}：{direction_word}"
-    price = f"現在 {signal.currency} ${signal.last_price:,.2f}"
+    price = f"現在 {labeled_money(signal.last_price, signal.currency)}"
     if signal.daily_change_percent is not None:
         price += f"（今天 {signal.daily_change_percent:+.1f}%）"
     lines = [headline, f"{price}，{body}。"]
@@ -306,16 +307,16 @@ def _holding_line(signal: Signal) -> str:
     if signal.average_cost is None:
         return ""
     unrealized = signal.discount_to_average_cost_percent or 0.0
-    return f"你持倉均價 {signal.currency} ${signal.average_cost:,.2f}，目前未實現 {unrealized:+.1f}%。"
+    return f"你持倉均價 {labeled_money(signal.average_cost, signal.currency)}，目前未實現 {unrealized:+.1f}%。"
 
 
 def _plain_lead_fragment(signal: Signal, condition: SignalCondition) -> str:
     """One plain clause for the headline, with the key number baked in where it helps."""
     snapshot = signal.snapshot
     if condition is SignalCondition.ABOVE_UPPER_BAND:
-        return f"漲到近一個月的相對高點（碰到高檔參考線約 ${snapshot.bands.upper:,.2f}）"
+        return f"漲到近一個月的相對高點（碰到高檔參考線約 {format_money(snapshot.bands.upper, signal.currency)}）"
     if condition is SignalCondition.BELOW_LOWER_BAND:
-        return f"跌到近一個月的相對低點（碰到低檔參考線約 ${snapshot.bands.lower:,.2f}）"
+        return f"跌到近一個月的相對低點（碰到低檔參考線約 {format_money(snapshot.bands.lower, signal.currency)}）"
     if condition is SignalCondition.ABOVE_SHORT_TREND:
         return f"比近三個月的平均價高約 {abs(snapshot.bias_to_sma_short_percent or 0.0):.0f}%"
     if condition is SignalCondition.BELOW_SHORT_TREND:

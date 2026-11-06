@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import date
 
 from .config import RenotifyPolicy
+from .currency import format_money
 from .signals import BUY, Signal, SignalCondition
 
 
@@ -62,7 +63,7 @@ def _further_move_note(signal: Signal, last: LastNotification, further: float) -
     verb = "再跌" if signal.direction == BUY else "再漲"
     return (
         f"條件與上次相同，但價格比上次通知（{last.fired_on.isoformat()}，"
-        f"${last.price:,.2f}）{verb} {further:.1f}%"
+        f"{format_money(last.price, signal.currency)}）{verb} {further:.1f}%"
     )
 
 

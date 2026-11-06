@@ -43,7 +43,7 @@ from ..signal_config import (
     resolve_thresholds,
     save_threshold_override,
 )
-from ..signal_subscriptions import InvalidSymbolError
+from ..markets import InvalidSymbolError
 from ..store import open_store
 from ..targets import build_entry_targets
 from . import serializers as ser
@@ -353,9 +353,10 @@ def _register_watchlist_write_routes(
     def add_watch(request: WatchRequest) -> dict:
         if request.buy_below is None and request.sell_above is None:
             raise HTTPException(status_code=400, detail="至少要給 buy_below 或 sell_above")
+        symbol = _resolve_symbol_or_400(client, request.symbol)
         with open_store(settings.database_path) as connection:
-            save_alert_rule(connection, request.symbol, request.buy_below, request.sell_above)
-        return {"ok": True}
+            save_alert_rule(connection, symbol, request.buy_below, request.sell_above)
+        return {"ok": True, "symbol": symbol}
 
     @app.delete("/api/watchlist/{symbol}")
     def remove_watch(symbol: str) -> dict:
@@ -443,7 +444,7 @@ def _register_signal_subscription_routes(
     @app.put("/api/signals/subscriptions/{symbol}")
     def put_subscription(symbol: str, request: SubscriptionRequest) -> dict:
         try:
-            result = service.set_signal_subscription(settings, symbol, request.enabled)
+            result = service.set_signal_subscription(settings, symbol, request.enabled, client)
         except InvalidSymbolError as error:
             raise HTTPException(status_code=400, detail=str(error)) from error
         return ser.serialize_subscription(result)
@@ -469,9 +470,10 @@ def _register_manual_position_routes(
 
     @app.post("/api/positions/manual")
     def add_manual_position(request: ManualPositionRequest) -> dict:
+        symbol = _resolve_symbol_or_400(client, request.symbol)
         with open_store(settings.database_path) as connection:
-            save_manual_position(connection, _to_manual_position(request))
-        return {"ok": True}
+            save_manual_position(connection, _to_manual_position(request, symbol))
+        return {"ok": True, "symbol": symbol}
 
     @app.delete("/api/positions/manual/{symbol}")
     def remove_manual_position(symbol: str) -> dict:
@@ -480,9 +482,16 @@ def _register_manual_position_routes(
         return {"ok": True, "removed": removed}
 
 
-def _to_manual_position(request: ManualPositionRequest) -> ManualPosition:
+def _resolve_symbol_or_400(client: MarketDataClient, raw_symbol: str) -> str:
+    try:
+        return service.resolve_symbol(client, raw_symbol)
+    except InvalidSymbolError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+def _to_manual_position(request: ManualPositionRequest, symbol: str) -> ManualPosition:
     return ManualPosition(
-        symbol=request.symbol,
+        symbol=symbol,
         quantity=request.quantity,
         average_cost=request.average_cost,
         note=request.note,

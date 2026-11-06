@@ -9,14 +9,12 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from .markets import InvalidSymbolError  # noqa: F401 - re-exported for callers
+
 SOURCE_HOLDING = "持股"
 SOURCE_WATCHLIST = "監控"
 SOURCE_FOLLOWED = "手動加入"
 _SYMBOL_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9.\-^=]{0,14}$")
-
-
-class InvalidSymbolError(ValueError):
-    pass
 
 
 @dataclass(frozen=True)

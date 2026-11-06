@@ -113,6 +113,7 @@
 - [x] **訊息格式只有一種** **已完成（2026-11-06，D27）**：compact / plain / full，可分管道設定、可隱藏持倉。
 - [x] **公開分享前的個資清理（2026-11-06，D28）**：原始筆記移到 gitignored 的 `docs/private/`，文件改佔位符、測試改合成數字。
 - [x] ~~**建立公開 repo**~~ **已完成（2026-11-06）**：github.com/alankowabunga/StockCapy；VM 改從公開 repo 部署。
+- [ ] **台股支援（進行中，暫停）**：三個階段的計畫、架構與目前進度見 [taiwan-stocks-plan.md](taiwan-stocks-plan.md)。
 - [x] **智慧提醒可自選通知對象（2026-11-06，D29）**：預設全收，`signals on/off` 與網頁「通知對象」逐檔關閉或額外加入。
 - [ ] **通知的「報價時間」寫死為「來源未提供」**。可改顯示 yfinance 的 `regularMarketTime`，
       報價若再過期，從通知本身就看得出來。

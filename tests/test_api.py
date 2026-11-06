@@ -114,7 +114,7 @@ def test_manual_position_lifecycle(client):
         "/api/positions/manual",
         json={"symbol": "vti", "quantity": 10.05, "average_cost": 300.00, "note": "早期買進"},
     )
-    assert created.json() == {"ok": True}
+    assert created.json() == {"ok": True, "symbol": "VTI"}
     listed = client.get("/api/positions/manual").json()
     assert listed[0]["symbol"] == "VTI"
     assert listed[0]["note"] == "早期買進"

@@ -84,6 +84,7 @@ class Settings:
     mute_market_wide_signals: bool
     llm_narration: bool
     llm_model: str
+    tw_benchmark_symbol: str = "^TWII"
     renotify: RenotifyPolicy = field(default_factory=RenotifyPolicy)
     messages: MessagePreferences = field(default_factory=MessagePreferences)
 
@@ -106,6 +107,7 @@ class Settings:
             mute_market_wide_signals=_flag("PORTFOLIO_MUTE_MARKET_WIDE", default=False),
             llm_narration=_flag("PORTFOLIO_LLM_NARRATION", default=False),
             llm_model=os.environ.get("PORTFOLIO_LLM_MODEL", "claude-opus-5").strip() or "claude-opus-5",
+            tw_benchmark_symbol=os.environ.get("PORTFOLIO_TW_BENCHMARK_SYMBOL", "").strip() or "^TWII",
             renotify=_renotify_from_environment(),
             messages=_messages_from_environment(),
         )

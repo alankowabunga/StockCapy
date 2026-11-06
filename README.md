@@ -565,6 +565,7 @@ launchctl load ~/Library/LaunchAgents/com.stockcapy.snapshot.plist
 | [docs/decisions.md](docs/decisions.md) | 關鍵決策紀錄：為什麼這樣做、否決了什麼、踩過哪些坑 |
 | [docs/progress.md](docs/progress.md) | 進度、待辦（含需要你提供資料的項目）、已知限制 |
 | [docs/api.md](docs/api.md) | API 契約（網頁依賴它）與已知落差 |
+| [docs/taiwan-stocks-plan.md](docs/taiwan-stocks-plan.md) | 進行中：台股支援的計畫、架構設計與接手說明 |
 | [docs/deploy-gce.md](docs/deploy-gce.md) | 部署到 GCE always-free e2-micro（月費 $0）的逐步指令與費用檢查清單 |
 
 ## 開發

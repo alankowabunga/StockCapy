@@ -18,6 +18,7 @@ from .holdings import Position, PositionLedger, build_ledger
 from .indicators import SHORT_TREND_WINDOW, compute_indicators, moving_average_series
 from .market import MarketDataClient
 from .market_calendar import is_close_series_current
+from .markets import US_MARKET, Market, market_for_symbol, resolve_symbol_input
 from .renotify import LastNotification, decide_renotification
 from .renotify import signal_conditions_key as _conditions_key
 from .notifiers import DeliveryResult, any_delivered, dispatch_alerts, dispatch_signals
@@ -283,7 +284,7 @@ def _fetch_adjusted_closes(
     now = datetime.now(timezone.utc)
     with open_store(settings.database_path) as connection:
         cached = load_price_history(connection, symbol)
-        if is_close_series_current(_last_close_day(cached), now):
+        if is_close_series_current(_last_close_day(cached), now, market_for_symbol(symbol)):
             return cached
         fetched = _download_closes(client, symbol, start, end)
         if fetched.empty:
@@ -310,12 +311,17 @@ def _download_closes(
         return pd.Series(dtype="float64")
 
 
-def market_context(settings: Settings, client: MarketDataClient) -> MarketContext | None:
+def benchmark_symbol_for(settings: Settings, market: Market) -> str:
+    return settings.benchmark_symbol if market is US_MARKET else settings.tw_benchmark_symbol
+
+
+def market_context(
+    settings: Settings, client: MarketDataClient, market: Market = US_MARKET
+) -> MarketContext | None:
     """The benchmark's own recent move, so a stock-specific rule can be told apart
-    from the whole market sliding."""
-    closes = _fetch_adjusted_closes(
-        settings, client, settings.benchmark_symbol, settings.signal_lookback_days
-    )
+    from the whole market sliding. Each market is compared with its own index."""
+    benchmark = benchmark_symbol_for(settings, market)
+    closes = _fetch_adjusted_closes(settings, client, benchmark, settings.signal_lookback_days)
     closes = closes.dropna()
     if len(closes) < 2:
         return None
@@ -326,7 +332,7 @@ def market_context(settings: Settings, client: MarketDataClient) -> MarketContex
     sessions = min(MARKET_MOVE_SESSIONS, len(closes) - 1)
     dated = isinstance(closes.index, pd.DatetimeIndex)
     return MarketContext(
-        benchmark_symbol=settings.benchmark_symbol, change_percent=change, sessions=sessions,
+        benchmark_symbol=benchmark, change_percent=change, sessions=sessions,
         start_date=closes.index[-sessions - 1].date().isoformat() if dated else None,
         end_date=closes.index[-1].date().isoformat() if dated else None,
     )
@@ -381,8 +387,23 @@ def load_signal_subscriptions(settings: Settings) -> list[SignalSubscription]:
     return _subscriptions_for(settings, positions)
 
 
-def set_signal_subscription(settings: Settings, raw_symbol: str, enabled: bool) -> SignalSubscription:
-    symbol = normalize_symbol(raw_symbol)
+def resolve_symbol(client: MarketDataClient | None, raw_symbol: str) -> str:
+    """User-typed symbol -> stored symbol; `2330` becomes `2330.TW` or `2330.TWO`."""
+    lookup = None if client is None else (lambda symbol: _has_price(client, symbol))
+    return resolve_symbol_input(raw_symbol, lookup)
+
+
+def _has_price(client: MarketDataClient, symbol: str) -> bool:
+    try:
+        return client.quote(symbol).last_price > 0
+    except Exception:  # noqa: BLE001 - an unknown ticker surfaces as any transport error
+        return False
+
+
+def set_signal_subscription(
+    settings: Settings, raw_symbol: str, enabled: bool, client: MarketDataClient | None = None
+) -> SignalSubscription:
+    symbol = normalize_symbol(resolve_symbol(client, raw_symbol))
     positions, _ = load_positions(settings)
     with open_store(settings.database_path) as connection:
         store_subscription_choice(connection, _default_signal_scope(connection, positions), symbol, enabled)
@@ -428,8 +449,12 @@ def _resolve_tuning_for(
     override: SignalThresholds | None,
 ) -> dict[str, SignalTuning]:
     thresholds = _resolve_thresholds_for(settings, symbols, override)
-    context = market_context(settings, client)
-    return {symbol: SignalTuning(thresholds[symbol], context) for symbol in symbols}
+    markets = {market_for_symbol(symbol) for symbol in symbols}
+    contexts = {market: market_context(settings, client, market) for market in markets}
+    return {
+        symbol: SignalTuning(thresholds[symbol], contexts[market_for_symbol(symbol)])
+        for symbol in symbols
+    }
 
 
 def _resolve_thresholds_for(

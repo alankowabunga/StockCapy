@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
+from .currency import format_money
 from .market import Quote
+from .markets import currency_for_symbol
+
 
 @dataclass(frozen=True)
 class AlertRule:
@@ -28,6 +31,10 @@ class TriggeredAlert:
     target_price: float
 
     @property
+    def currency(self) -> str:
+        return currency_for_symbol(self.symbol)
+
+    @property
     def gap_percent(self) -> float:
         if not self.target_price:
             return 0.0
@@ -38,7 +45,8 @@ class TriggeredAlert:
         verb = "跌破入手價" if self.direction == "BUY" else "突破出場價"
         gap = "低於" if self.gap_percent < 0 else "高於" if self.gap_percent > 0 else "等於"
         return (
-            f"{self.symbol} {verb} ${self.target_price:,.2f}（現價 ${self.last_price:,.2f}）"
+            f"{self.symbol} {verb} {format_money(self.target_price, self.currency)}"
+            f"（現價 {format_money(self.last_price, self.currency)}）"
             f"｜{gap}目標價 {abs(self.gap_percent):.1f}%"
         )
 

@@ -30,7 +30,8 @@ from .assumptions import (
     save_override,
 )
 from .auth import InsecureExposureError, require_secure_binding
-from .signal_subscriptions import InvalidSymbolError
+from .currency import format_money
+from .markets import InvalidSymbolError, currency_for_symbol
 from .config import Settings, generate_api_token
 from .fx_sync import backfill_transaction_fx
 from .diagnostics import detect_missing_cost_basis
@@ -267,15 +268,26 @@ def add_position(
     avg_cost: Annotated[float, typer.Option(help="你的平均成本（每股）")],
     note: Annotated[str, typer.Option(help="備註")] = "",
 ) -> None:
-    """手動輸入持倉（沒有 CSV，或匯出檔不含早期買進紀錄時用）。"""
+    """手動輸入持倉（沒有 CSV，或匯出檔不含早期買進紀錄時用）。台股填台幣均價。"""
     settings = _settings()
+    symbol = _resolve_symbol_or_exit(symbol)
     manual = ManualPosition(symbol=symbol, quantity=shares, average_cost=avg_cost, note=note)
     with open_store(settings.database_path) as connection:
         save_manual_position(connection, manual)
+    currency = currency_for_symbol(symbol)
     console.print(
-        f"[green]已記錄[/green] {symbol.upper()}：{shares:,.4f} 股 @ ${avg_cost:,.2f}"
-        f"（成本 ${shares * avg_cost:,.2f}）"
+        f"[green]已記錄[/green] {symbol}：{shares:,.4f} 股 @ {format_money(avg_cost, currency)}"
+        f"（成本 {format_money(shares * avg_cost, currency)}）"
     )
+
+
+def _resolve_symbol_or_exit(raw_symbol: str) -> str:
+    """`2330` -> `2330.TW` / `2330.TWO`; an unknown code stops the command."""
+    try:
+        return service.resolve_symbol(MarketDataClient(), raw_symbol)
+    except InvalidSymbolError as error:
+        console.print(f"[red]{error}[/red]")
+        raise typer.Exit(code=1) from error
 
 
 @app.command("remove-position")
@@ -327,17 +339,19 @@ def watch_add(
         console.print("[red]至少要給 --buy-below 或 --sell-above 其中一個。[/red]")
         raise typer.Exit(code=1)
     settings = _settings()
+    symbol = _resolve_symbol_or_exit(symbol)
     with open_store(settings.database_path) as connection:
         save_alert_rule(connection, symbol, buy_below, sell_above)
-    console.print(f"[green]已設定[/green] {symbol.upper()}：{_describe_targets(buy_below, sell_above)}")
+    console.print(f"[green]已設定[/green] {symbol}：{_describe_targets(symbol, buy_below, sell_above)}")
 
 
-def _describe_targets(buy_below: float | None, sell_above: float | None) -> str:
+def _describe_targets(symbol: str, buy_below: float | None, sell_above: float | None) -> str:
+    currency = currency_for_symbol(symbol)
     parts = []
     if buy_below is not None:
-        parts.append(f"跌破 ${buy_below:,.2f} 提醒")
+        parts.append(f"跌破 {format_money(buy_below, currency)} 提醒")
     if sell_above is not None:
-        parts.append(f"突破 ${sell_above:,.2f} 提醒")
+        parts.append(f"突破 {format_money(sell_above, currency)} 提醒")
     return "、".join(parts)
 
 
@@ -509,7 +523,7 @@ def signals_off(symbol: str) -> None:
 
 def _set_signal_subscription(symbol: str, enabled: bool) -> None:
     try:
-        result = service.set_signal_subscription(_settings(), symbol, enabled)
+        result = service.set_signal_subscription(_settings(), symbol, enabled, MarketDataClient())
     except InvalidSymbolError as error:
         console.print(f"[red]{error}[/red]")
         raise typer.Exit(code=1) from error

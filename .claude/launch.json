@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "stockcapy-web",
+      "runtimeExecutable": ".venv/bin/stockcapy",
+      "runtimeArgs": ["serve", "--port", "8765"],
+      "port": 8765
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# docker compose up -d  ->  http://localhost:8765
+# Needs PORTFOLIO_API_TOKEN in .env first (see README「用 Docker 跑」).
+services:
+  stockcapy:
+    build: .
+    image: stockcapy:local
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORTFOLIO_DATA_DIR: /data
+      PORTFOLIO_DESKTOP_NOTIFICATIONS: "0"
+      PORTFOLIO_CHECK_INTERVAL_MINUTES: ${PORTFOLIO_CHECK_INTERVAL_MINUTES:-30}
+    ports:
+      - "8765:8080"
+    volumes:
+      - ./data:/data

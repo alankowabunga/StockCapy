@@ -1,0 +1,29 @@
+# fly.toml —— 部署到 Fly.io。先跑 `fly launch --no-deploy` 產生 app 名稱後改這裡。
+app = "stockcapy-CHANGEME"
+primary_region = "nrt"   # 東京，離台灣最近
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  PORTFOLIO_DATA_DIR = "/data"
+  PORTFOLIO_DESKTOP_NOTIFICATIONS = "0"
+  # 雲端沒有 launchd，靠 app 內建排程每 30 分鐘檢查一次價格
+  PORTFOLIO_CHECK_INTERVAL_MINUTES = "30"
+
+[[mounts]]
+  source = "stockcapy_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

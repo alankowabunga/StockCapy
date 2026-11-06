@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="StockCapy">
+  <!-- Favicon variant: no orange, so the silhouette survives 16px. -->
+  <rect x="9" y="11" width="12" height="10" rx="5" fill="#8a6244"/>
+  <rect x="43" y="11" width="12" height="10" rx="5" fill="#8a6244"/>
+  <rect x="5" y="15" width="54" height="40" rx="13" fill="#a97b52"/>
+  <rect x="17" y="33" width="30" height="22" rx="11" fill="#8a6244"/>
+  <circle cx="19" cy="26" r="4.2" fill="#2b1d12"/>
+  <circle cx="45" cy="26" r="4.2" fill="#2b1d12"/>
+  <circle cx="28.5" cy="44" r="2.7" fill="#2b1d12"/>
+  <circle cx="35.5" cy="44" r="2.7" fill="#2b1d12"/>
+</svg>

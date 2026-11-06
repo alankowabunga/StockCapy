@@ -53,9 +53,19 @@ Base URL 由使用者設定。除 `/api/session` 外，所有端點都需要 `Au
 - `signals[]`：`average_cost`、`discount_to_average_cost_percent`、`rsi`、`sma_short`、`sma_long`、
   `bias_to_sma_short_percent`、`bollinger_lower`、`bollinger_upper`、`benchmark_symbol`、`benchmark_change_percent`（歷史不足時為 `null`）
 
+## 估值欄位（`targets[]`）
+
+- `margin_of_safety`：**實際套用**的安全邊際；`buy_below` 與判斷層級都用它
+- `configured_margin_of_safety`：你設定（或預設）的安全邊際。實際值較大代表因不確定性被加寬；
+  你明確設定過安全邊際時兩者相等
+- `target_pe`：Target P/E 模型實際用的倍數；來源看 `assumption_source`
+- `estimates[]` 會多出 `PEG（成長調整）` 與 `DCF（現金流折現）`，不適用時 `is_applicable` 為 `false`
+
 ## 列舉值
 
 - `targets[].basis`：`估值模型` | `200日均線` | `資料不足` | `無`
+- `targets[].uncertainty_tier`：`低` | `中` | `高` | `極高`（基礎不是估值模型時為 `null`）
+- `targets[].uncertainty_reasons[]`：`只有單一模型適用` | `模型之間差距很大` | `盈餘變動劇烈`
 - `targets[].assumption_source`：`historical` | `manual` | `default`
 - `watchlist[].state`：`buy_triggered` | `sell_triggered` | `watching`
 - `check.triggered[].direction`：`BUY` | `SELL`

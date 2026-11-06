@@ -161,7 +161,7 @@ NVDA 的結果是這套規則跑出來的：高本益比 → Graham 出局；不
 ### 階段 4：浮動安全邊際
 | # | 標準 |
 |---|---|
-| D1 | 不確定性由三個旗標決定（單一模型、模型分歧大、盈餘劇變），旗標數對應「低／中／高／極高」 |
+| D1 | 不確定性由三個項目計點決定（單一模型 2 點、模型分歧大 1 點、盈餘劇變 1 點），點數對應「低／中／高／極高」，四級都必須可達 |
 | D2 | 有效安全邊際 = max(使用者設定, 等級下限)；使用者明確設定安全邊際（全域／個股／命令列）時不自動加寬 |
 | D3 | 入手價、判斷層級（verdict）、CLI、Web、提醒一律使用同一個有效邊際 |
 | D4 | 等級為「低」時，結果與舊行為完全一致 |
@@ -173,6 +173,48 @@ NVDA 的結果是這套規則跑出來的：高本益比 → Graham 出局；不
 | E1 | 公式可手算驗證：10 年成長線性淡出至終值成長，以 required_return 折現，除以流通股數 |
 | E2 | 閘門：自由現金流 ≤ 0、缺股數、金融／不動產業、折現率 ≤ 終值成長時不採計 |
 | E3 | 缺自由現金流欄位的既有股票，結果與改動前一致 |
+
+---
+
+## 七、實作結果（2026-11-06）
+
+全部標準達成。實作過程中對原設計有三處修正，已併入上面的標準或決策紀錄：
+
+| 修正 | 原因 |
+|---|---|
+| D1 由「旗標數」改為「計點」（單一模型 2 點） | 「單一模型」與「模型分歧」互斥（分歧要 ≥ 2 個模型），等權重的旗標最多只會亮 2 個，「極高」永遠到不了。單一模型本來就是最弱的情況，權重加倍 |
+| 階段 2 的 Forward P/E 模型不另立 | Target P/E 是 trailing 基準，拿去乘預估 EPS 會把成長算兩次（`valuation.py` 註解已警告）；用同一個倍數乘預估 EPS 又和 Target P/E 算出同一個數。改由 PEG 承擔「前瞻 + 成長調整」 |
+| 階段 3 的「同業中位數」「Justified P/E」不做 | 理由見 `decisions.md` D30：yfinance 無穩定同業清單且無法離線驗證；Justified P/E 實際算出 17～19 倍，與預設 18 倍重疊、沒有獨立資訊 |
+
+### 標準對應的測試
+
+| # | 驗證位置 |
+|---|---|
+| A1 | `test_advisor.py`：`test_a_lone_model_is_called_out…`、`test_several_models_are_listed…` |
+| A2 | `test_advisor.py`：`test_uncertainty_and_the_margin_actually_used_are_shown` |
+| A3 | `test_advisor.py`：`test_the_multiple_and_where_it_came_from_are_shown`、`test_a_manual_multiple_says_so` |
+| A4 / C1 | `test_alert_valuation.py`：提醒與完整視圖同一個合理價、歷史取不到退回預設、失敗不丟提醒、30 天內不重抓 |
+| A5 | `test_advisor.py`：`test_reference_without_context_adds_nothing_extra`、`test_no_reference_price_means…` |
+| B1 / B2 | `test_valuation.py`：PEG 公式、封頂、閘門（參數化 6 種不適用情形） |
+| B3 | `test_valuation.py`：`test_value_stock_without_new_inputs_is_untouched…` |
+| B4 | `test_valuation.py`：`test_growth_stock_is_no_longer_a_single_assumption` |
+| B5 | `test_valuation.py`、`test_api.py`：新模型自動列在估值表 |
+| C2 / D5 | `test_api.py`：`test_targets_expose_the_multiple_and_the_uncertainty…` |
+| C3 | `decisions.md` D30 |
+| D1 | `test_uncertainty.py`：四級皆可達 |
+| D2 | `test_uncertainty.py`、`test_assumptions.py`、`test_api.py`：明確設定的邊際不被加寬 |
+| D3 | `test_targets.py`（buy_below 與 verdict 同用有效邊際）、`test_report_valuation.py`、`test_alert_valuation.py` |
+| D4 | `test_uncertainty.py`、`test_targets.py`：低等級與舊行為一致 |
+| E1 / E2 / E3 | `test_valuation.py`：DCF 閉式解與逐年獨立計算、閘門（參數化 7 種）、既有股票不變 |
+| G1 | 因「有意的行為變更」修改的既有測試：`test_valuation.py` 成長股彙總（現為 2 個模型）、`test_target_pe_options.py` 三個（MSFT 預期成長 31%，PEG 加入，單一模型情境改用低成長標的）、`test_signal_service.py` 價格快取計數（提醒現在也會讀五年歷史，改為只計訊號窗口） |
+| G3 | `store.py` 無任何改動 |
+
+另外做了突變驗證（故意弄壞實作，測試必須變紅）：關掉加寬、讓提醒忽略歷史 P/E、拿掉 PEG 成長閘門、拿掉 DCF 產業閘門，四種都有測試失敗。
+
+### 已知限制
+
+- 沙盒連不到 Yahoo，所以**沒有用實際 NVDA 資料驗證**。改用你那則提醒反推的數字（EPS 7.18、現價 181.60）加上預估 EPS 與自由現金流的合理範圍掃過：合理價落在 113～220，沒有荒謬值；DCF 與每股自由現金流嚴格成正比，是最敏感的模型。請你實際跑一次 `stockcapy targets` 對照。
+- PEG 目標 1.0、成長上限 20%、終值成長 3% 是程式內預設，尚未逐檔持久化。
 
 ---
 

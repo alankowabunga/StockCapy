@@ -1,6 +1,6 @@
 [project]
 name = "stockcapy"
-version = "0.1.0"
+version = "0.2.0"
 description = "StockCapy — 美股合理價、入手價與到價提醒。淡定等到價。"
 requires-python = ">=3.12"
 license = "MIT"

@@ -96,9 +96,9 @@ def _check_symbol(symbol: str, market_code: str) -> str | None:
             return None
         if re.match(r"^\d{4,6}[A-Z]?$", symbol):
             return f"台股代號請寫完整，例如 {symbol}.TW（上市）或 {symbol}.TWO（上櫃）"
-        return f"{symbol} 不是台股代號（結尾要有 .TW 或 .TWO）；美股請用「美股券商」區匯入"
+        return f"{symbol} 不是台股代號（結尾要有 .TW 或 .TWO）；美股請切到「美股券商」再匯入"
     if is_taiwan_symbol(symbol):
-        return f"{symbol} 是台股代號，請改用「台股券商」區匯入"
+        return f"{symbol} 是台股代號，請切到「台股券商」再匯入"
     return None
 
 

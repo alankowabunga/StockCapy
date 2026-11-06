@@ -455,8 +455,23 @@ function decimals(value, min, max) {
   return Number(value).toLocaleString('en-US', {minimumFractionDigits: min, maximumFractionDigits: max});
 }
 
-function money(value) {
-  return isNumber(value) ? '$' + decimals(value, 2, 2) : DASH;
+var CURRENCY_MARKS = { USD: '$', TWD: 'NT$' };
+
+/* Market is read from the Yahoo suffix, mirroring markets.py — no per-row currency
+   field is needed. */
+function currencyForSymbol(symbol) {
+  var s = (symbol || '').toUpperCase();
+  return (s.slice(-3) === '.TW' || s.slice(-4) === '.TWO') ? 'TWD' : 'USD';
+}
+
+function money(value, currency) {
+  if (!isNumber(value)) return DASH;
+  var mark = CURRENCY_MARKS[currency || 'USD'] || ((currency || 'USD') + ' ');
+  return mark + decimals(value, 2, 2);
+}
+
+function moneyFor(value, symbol) {
+  return money(value, currencyForSymbol(symbol));
 }
 
 function fxRate(value) {
@@ -644,11 +659,11 @@ function targetMainRowHtml(target, index) {
   return '<tr class="row-main' + (reached ? ' hit' : '') + '" data-toggle="' + index + '" tabindex="0">'
     + '<td class="sym"><span class="caret">&#9656;</span> ' + esc(target.symbol)
     + (reached ? ' <span class="badge ok">已到價</span>' : '') + '</td>'
-    + numCell(money(target.last_price))
-    + numCell(money(target.average_cost), 'opt')
+    + numCell(moneyFor(target.last_price, target.symbol))
+    + numCell(moneyFor(target.average_cost, target.symbol), 'opt')
     + numCell(signedPercent(target.discount_to_average_cost_percent, 1), 'opt')
-    + numCell(money(target.reference_price))
-    + numCell(money(target.buy_below))
+    + numCell(moneyFor(target.reference_price, target.symbol))
+    + numCell(moneyFor(target.buy_below, target.symbol))
     + numCell(gapHtml(target.gap_to_buy_below_percent))
     + '<td class="opt">' + basisHtml(target) + '</td></tr>';
 }
@@ -669,7 +684,7 @@ function basisHtml(target) {
 
 function targetDetailRowHtml(target, index) {
   return '<tr class="row-detail" data-detail="' + index + '" hidden><td colspan="8"><div class="detail">'
-    + '<div class="detail-col"><h4>估值模型</h4>' + estimatesTableHtml(target.estimates || [])
+    + '<div class="detail-col"><h4>估值模型</h4>' + estimatesTableHtml(target.estimates || [], currencyForSymbol(target.symbol))
     + singleModelCaveatHtml(target) + assumptionProvenanceHtml(target) + '</div>'
     + '<div class="detail-col"><h4>價格位置 <span class="dim">與內在價值無關，只看它自己的近期區間</span></h4>'
     + pricePositionHtml(target) + '</div>'
@@ -701,27 +716,27 @@ async function renderPeOptions(element, symbol) {
     element.innerHTML = emptyStateHtml('取不到這檔的估值資料，無法列出選項。');
     return;
   }
-  element.innerHTML = peOptionsTableHtml(choices) + peOptionsNoteHtml(choices);
+  element.innerHTML = peOptionsTableHtml(choices, currencyForSymbol(symbol)) + peOptionsNoteHtml(choices);
   bindPeOptionButtons(element, symbol);
 }
 
-function peOptionsTableHtml(choices) {
+function peOptionsTableHtml(choices, currency) {
   return '<div class="table-wrap"><table class="grid"><thead><tr>'
     + '<th>選項</th><th class="num">倍數</th><th class="num">參考價</th>'
     + '<th class="num">入手價</th><th class="num">vs 現價</th>'
     + '<th>級距與建議</th>'
     + '</tr></thead><tbody>'
-    + choices.candidates.map(peOptionRowHtml).join('')
+    + choices.candidates.map(function (candidate) { return peOptionRowHtml(candidate, currency); }).join('')
     + '</tbody></table></div>';
 }
 
-function peOptionRowHtml(candidate) {
+function peOptionRowHtml(candidate, currency) {
   return '<tr' + (candidate.is_current ? ' class="hit"' : '') + '>'
     + '<td>' + esc(candidate.label) + ' ' + peOptionButtonHtml(candidate)
     + '<div class="dim" style="font-size:11px">' + esc(candidate.rationale) + '</div></td>'
     + numCell(decimals(candidate.target_pe, 1, 1))
-    + numCell(money(candidate.fair_value))
-    + numCell(money(candidate.buy_below))
+    + numCell(money(candidate.fair_value, currency))
+    + numCell(money(candidate.buy_below, currency))
     + numCell(signedPercent(candidate.upside_percent, 0))
     + '<td>' + tierHtml(candidate) + hintHtml(candidate) + '</td></tr>';
 }
@@ -806,7 +821,7 @@ async function renderPriceChart(element) {
     element.innerHTML = emptyStateHtml('本機還沒有這檔的歷史收盤價（跑一次智慧提醒檢查就會補上）。');
     return;
   }
-  element.innerHTML = priceChartHtml(points, averageCost) + priceChartFootHtml(points, averageCost);
+  element.innerHTML = priceChartHtml(points, averageCost) + priceChartFootHtml(points, averageCost, currencyForSymbol(symbol));
 }
 
 function priceChartHtml(points, averageCost) {
@@ -850,14 +865,14 @@ function averageCostLineHtml(averageCost, scale) {
   return '<line class="cost-line" x1="0" y1="' + y + '" x2="100" y2="' + y + '"></line>';
 }
 
-function priceChartFootHtml(points, averageCost) {
+function priceChartFootHtml(points, averageCost, currency) {
   var first = points[0];
   var last = points[points.length - 1];
-  return '<div class="range-ends"><span>' + esc(first.date) + ' ' + money(first.close) + '</span>'
-    + '<span>' + esc(last.date) + ' ' + money(last.close) + '</span></div>'
+  return '<div class="range-ends"><span>' + esc(first.date) + ' ' + money(first.close, currency) + '</span>'
+    + '<span>' + esc(last.date) + ' ' + money(last.close, currency) + '</span></div>'
     + '<div class="chips">' + chartLegendHtml('close-line', '收盤')
     + chartLegendHtml('trend-line', '60 日均線')
-    + (isNumber(averageCost) ? chartLegendHtml('cost-line', '我的均價 ' + money(averageCost)) : '')
+    + (isNumber(averageCost) ? chartLegendHtml('cost-line', '我的均價 ' + money(averageCost, currency)) : '')
     + '</div>';
 }
 
@@ -865,12 +880,12 @@ function chartLegendHtml(lineClass, label) {
   return '<span class="chip"><i class="legend-line ' + lineClass + '"></i>' + esc(label) + '</span>';
 }
 
-function estimatesTableHtml(estimates) {
+function estimatesTableHtml(estimates, currency) {
   if (!estimates.length) return '<div class="dim">沒有任何估值模型輸出。</div>';
   return '<table class="sub"><thead><tr><th>模型</th><th class="num">估值</th><th>採計</th><th>說明</th></tr></thead><tbody>'
     + estimates.map(function (estimate) {
         return '<tr><td>' + esc(estimate.model_name) + '</td>'
-          + numCell(money(estimate.fair_value))
+          + numCell(money(estimate.fair_value, currency))
           + '<td>' + estimateStateHtml(estimate) + '</td>'
           + '<td class="note">' + esc(estimate.note || '') + '</td></tr>';
       }).join('')
@@ -898,8 +913,8 @@ function assumptionProvenanceHtml(target) {
 function pricePositionHtml(target) {
   return '<dl class="facts">'
     + '<dt>P/E</dt><dd>' + ratio(target.trailing_pe, 1) + '</dd>'
-    + '<dt>52 週低</dt><dd>' + money(target.week52_low) + '</dd>'
-    + '<dt>52 週高</dt><dd>' + money(target.week52_high) + '</dd>'
+    + '<dt>52 週低</dt><dd>' + moneyFor(target.week52_low, target.symbol) + '</dd>'
+    + '<dt>52 週高</dt><dd>' + moneyFor(target.week52_high, target.symbol) + '</dd>'
     + '<dt>區間位置</dt><dd>' + plainPercent(target.range_percentile, 0) + '</dd>'
     + '<dt>vs 200 日均線</dt><dd>' + signedPercent(target.premium_to_two_hundred_day_percent, 2) + '</dd>'
     + '</dl>' + rangeBarHtml(target);
@@ -911,9 +926,9 @@ function rangeBarHtml(target) {
   return '<div class="range"><div class="range-track">'
     + '<div class="range-fill" style="width:' + position + '%"></div>'
     + '<div class="range-pin" style="left:' + position + '%"></div></div>'
-    + '<div class="range-ends"><span>低 ' + money(target.week52_low) + '</span>'
+    + '<div class="range-ends"><span>低 ' + moneyFor(target.week52_low, target.symbol) + '</span>'
     + '<span>' + plainPercent(target.range_percentile, 0) + '</span>'
-    + '<span>高 ' + money(target.week52_high) + '</span></div></div>';
+    + '<span>高 ' + moneyFor(target.week52_high, target.symbol) + '</span></div></div>';
 }
 
 function bindRowToggles(root) {
@@ -1117,9 +1132,9 @@ function unpricedMark(position) {
 function positionRowHtml(position) {
   return '<tr><td class="sym">' + esc(position.symbol) + '</td>'
     + numCell(shares(position.quantity) + unpricedMark(position))
-    + numCell(money(position.average_cost) + unpricedMark(position), 'opt')
-    + numCell(money(position.last_price))
-    + numCell(money(position.market_value))
+    + numCell(moneyFor(position.average_cost, position.symbol) + unpricedMark(position), 'opt')
+    + numCell(moneyFor(position.last_price, position.symbol))
+    + numCell(moneyFor(position.market_value, position.symbol))
     + numCell(signedMoney(position.unrealized_gain))
     + numCell(signedPercent(position.unrealized_return_percent, 2))
     + numCell(plainPercent(position.weight_percent, 1), 'opt')
@@ -1268,9 +1283,9 @@ function receiptsTableHtml(receipts) {
 
 function receiptRowHtml(receipt) {
   return '<tr><td class="sym">' + esc(receipt.symbol) + '</td>'
-    + numCell(money(receipt.gross_amount))
-    + numCell('<span class="down">-' + money(receipt.withheld_amount) + '</span>')
-    + numCell('<span class="up">' + money(receipt.net_amount) + '</span>')
+    + numCell(moneyFor(receipt.gross_amount, receipt.symbol))
+    + numCell('<span class="down">-' + moneyFor(receipt.withheld_amount, receipt.symbol) + '</span>')
+    + numCell('<span class="up">' + moneyFor(receipt.net_amount, receipt.symbol) + '</span>')
     + numCell(plainPercent(receipt.effective_withholding_percent, 1), 'opt') + '</tr>';
 }
 
@@ -1296,9 +1311,9 @@ function forecastsTableHtml(forecasts) {
 function forecastRowHtml(forecast) {
   return '<tr><td class="sym">' + esc(forecast.symbol) + '</td>'
     + numCell(shares(forecast.quantity), 'opt')
-    + numCell(money(forecast.annual_rate_per_share), 'opt')
-    + numCell(money(forecast.gross_annual_income))
-    + numCell('<span class="up">' + money(forecast.net_annual_income) + '</span>') + '</tr>';
+    + numCell(moneyFor(forecast.annual_rate_per_share, forecast.symbol), 'opt')
+    + numCell(moneyFor(forecast.gross_annual_income, forecast.symbol))
+    + numCell('<span class="up">' + moneyFor(forecast.net_annual_income, forecast.symbol) + '</span>') + '</tr>';
 }
 
 function forecastsTotalRowHtml(forecasts) {
@@ -1328,9 +1343,9 @@ async function renderWatchlist(element) {
 function watchRowHtml(row) {
   return '<tr' + (row.state === 'buy_triggered' ? ' class="hit"' : '') + '>'
     + '<td class="sym">' + esc(row.symbol) + '</td>'
-    + numCell(money(row.last_price))
-    + numCell(money(row.buy_below))
-    + numCell(money(row.sell_above), 'opt')
+    + numCell(moneyFor(row.last_price, row.symbol))
+    + numCell(moneyFor(row.buy_below, row.symbol))
+    + numCell(moneyFor(row.sell_above, row.symbol), 'opt')
     + numCell(gapHtml(row.distance_to_buy_percent))
     + '<td>' + watchStateHtml(row.state) + '</td>'
     + '<td><button class="btn tiny danger" type="button" data-delete="' + esc(row.symbol) + '">刪除</button></td></tr>';
@@ -1389,7 +1404,7 @@ function checkResultHtml(result) {
   var items = triggered.map(function (alert) {
     return '<li><span class="badge ' + (alert.direction === 'BUY' ? 'ok' : 'danger') + '">'
       + esc(alert.direction) + '</span> ' + esc(alert.headline)
-      + ' <span class="dim">目標 ' + money(alert.target_price) + ' / 現價 ' + money(alert.last_price) + '</span></li>';
+      + ' <span class="dim">目標 ' + moneyFor(alert.target_price, alert.symbol) + ' / 現價 ' + moneyFor(alert.last_price, alert.symbol) + '</span></li>';
   }).join('');
   return '<div class="box ok-box"><strong>觸發 ' + triggered.length + ' 筆</strong>'
     + '<ul class="alert-list">' + items + '</ul>'
@@ -1441,7 +1456,7 @@ function signalRowHtml(row) {
     + '<td class="sym">' + esc(row.symbol)
     + (row.muted ? ' <span class="badge">不推播</span>' : '') + '</td>'
     + '<td>' + signalDirectionHtml(row.direction) + '</td>'
-    + numCell(money(row.last_price))
+    + numCell(moneyFor(row.last_price, row.symbol))
     + numCell(String(row.severity))
     + '<td>' + labels + '</td>'
     + '<td>' + (row.likely_market_wide ? '<span class="badge">可能</span>' : '<span class="dim">否</span>') + '</td></tr>';
@@ -1565,7 +1580,7 @@ async function renderSignalHistory(element) {
         return '<tr><td>' + esc(row.event_date) + '</td><td class="sym">' + esc(row.symbol) + '</td>'
           + '<td>' + signalDirectionHtml(row.direction) + '</td>'
           + '<td class="dim">' + esc((row.conditions || '').replace(/^[^:]*:/, '')) + '</td>'
-          + numCell(money(row.last_price)) + '</tr>';
+          + numCell(moneyFor(row.last_price, row.symbol)) + '</tr>';
       }).join('') + '</tbody></table></div>';
 }
 
@@ -1674,7 +1689,7 @@ async function renderManualPositions(element) {
 function manualRowHtml(position) {
   return '<tr><td class="sym">' + esc(position.symbol) + '</td>'
     + numCell(shares(position.quantity))
-    + numCell(money(position.average_cost))
+    + numCell(moneyFor(position.average_cost, position.symbol))
     + '<td class="opt dim">' + esc(position.note || '') + '</td>'
     + '<td><button class="btn tiny danger" type="button" data-delete="' + esc(position.symbol) + '">刪除</button></td></tr>';
 }

@@ -57,6 +57,8 @@ StockCapy 幫你回答一個問題：**這檔美股現在的價格合不合理�
 
 ## 快速開始（Docker，約 5 分鐘）
 
+<img align="right" src="assets/stickers/winner.png" width="150" alt="">
+
 需要先裝好 [Docker](https://docs.docker.com/get-docker/)（含 Docker Compose）。
 
 **1. 下載並建立設定檔**
@@ -86,6 +88,8 @@ docker compose up -d
 資料存在 `./data/`（已在 `.gitignore`，不會進版控）。改了 `.env` 之後要再跑一次 `docker compose up -d` 才會生效。
 
 ## 第一次使用：四個步驟
+
+<img align="right" src="assets/stickers/thumbsup.png" width="150" alt="">
 
 1. **放進持股**：到「資料」分頁上傳券商匯出的 CSV（分「美股券商」「台股券商」兩區，先選格式；Firstrade 見[怎麼拿 Firstrade 的資料](#怎麼拿-firstrade-的資料)，其他券商見[通用格式](#其他券商與台股通用格式)），
    或在「手動持倉」輸入代號、股數、均價。想先看效果，可以上傳範例檔
@@ -238,6 +242,8 @@ stockcapy notify-test
 
 ## 判斷入手價（主要用途）
 
+<img align="right" src="assets/stickers/bull.png" width="150" alt="">
+
 ```bash
 stockcapy targets                              # 用預設假設看所有持倉
 stockcapy targets MSFT NVDA --target-pe 28     # 指定標的與貼近現實的倍數
@@ -344,6 +350,8 @@ stockcapy value KO --target-pe 20 --required-return 0.08 --margin-of-safety 0.25
 代表這檔股票的價值對假設極度敏感 —— 那件事本身就是最有用的資訊。
 
 ## 智慧提醒（規則引擎 + 一句話摘要）
+
+<img align="right" src="assets/stickers/party.png" width="150" alt="">
 
 到價提醒只看單一價位。**智慧提醒**多疊一層：定期抓還原股價、算技術指標，結合你的均價，
 用你自己設定的規則判斷「現在偏低 / 偏高」，觸發時推播一句話現況摘要。

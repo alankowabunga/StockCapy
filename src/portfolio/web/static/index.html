@@ -83,6 +83,7 @@ main{padding:12px; max-width:1180px; margin:0 auto}
 .state{padding:14px 2px; color:var(--dim); font-size:13px}
 .state-art{display:flex; flex-direction:column; align-items:center; gap:10px; padding:10px 2px 16px; text-align:center}
 .state-art img{display:block; height:auto; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
+.state-art img.sticker{border-radius:0; box-shadow:none; filter:drop-shadow(0 6px 8px rgba(60,35,10,.22))}
 .login-hero{display:block; width:100%; max-width:340px; height:auto; margin:0 auto 12px; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
 footer{
   display:flex; align-items:center; gap:6px; padding:4px 12px 20px; max-width:1180px; margin:0 auto;
@@ -548,13 +549,16 @@ function numCell(html, extraClass) {
   return '<td class="num' + (extraClass ? ' ' + extraClass : '') + '">' + html + '</td>';
 }
 
-// Mascot pictures for "nothing here yet" states: [file, display width, intrinsic width, height].
+// Mascot pictures for "nothing here yet" states:
+// [file, display width, intrinsic width, intrinsic height, is a transparent sticker].
 // Failure messages ("取不到…") deliberately get none; a cheerful picture would mislead.
 var EMPTY_ART = {
-  face: ['face.webp', 120, 240, 240],
-  coins: ['coins.webp', 220, 460, 210],
-  chart: ['chart.webp', 190, 360, 319],
-  coin: ['coin.webp', 104, 200, 176]
+  face: ['face.webp', 120, 240, 240, false],
+  chart: ['chart.webp', 190, 360, 319, false],
+  winner: ['sticker-winner.webp', 180, 360, 345, true],
+  thumbsup: ['sticker-thumbsup.webp', 160, 360, 388, true],
+  party: ['sticker-party.webp', 160, 360, 397, true],
+  bull: ['sticker-bull.webp', 170, 360, 393, true]
 };
 
 function emptyStateHtml(message, art) {
@@ -562,9 +566,9 @@ function emptyStateHtml(message, art) {
   if (!spec) {
     return '<div class="state">' + esc(message) + '</div>';
   }
-  return '<div class="state state-art"><img src="/art/' + spec[0] + '" alt="" width="' + spec[2]
-    + '" height="' + spec[3] + '" style="width:' + spec[1] + 'px;max-width:100%"><div>'
-    + esc(message) + '</div></div>';
+  return '<div class="state state-art"><img' + (spec[4] ? ' class="sticker"' : '')
+    + ' src="/art/' + spec[0] + '" alt="" width="' + spec[2] + '" height="' + spec[3]
+    + '" style="width:' + spec[1] + 'px;max-width:100%"><div>' + esc(message) + '</div></div>';
 }
 
 /* ---------- API ---------- */
@@ -657,7 +661,7 @@ function loadTargets() { loadInto(byId('targets-body'), renderTargets); }
 async function renderTargets(element) {
   var targets = await getJson('/targets');
   if (!targets || !targets.length) {
-    element.innerHTML = emptyStateHtml('沒有可評估的標的 —— 先到「資料」分頁匯入 CSV 或新增手動持倉。', 'face');
+    element.innerHTML = emptyStateHtml('沒有可評估的標的 —— 先到「資料」分頁匯入 CSV 或新增手動持倉。', 'winner');
     return;
   }
   element.innerHTML = targetsTableHtml(targets);
@@ -1009,7 +1013,7 @@ async function renderPortfolio(element) {
   var portfolio = await getJson('/portfolio');
   var positions = portfolio.positions || [];
   element.innerHTML = summaryCardsHtml(portfolio.summary || {})
-    + (positions.length ? positionsTableHtml(positions) : emptyStateHtml('目前沒有持倉。', 'coins'))
+    + (positions.length ? positionsTableHtml(positions) : emptyStateHtml('目前沒有持倉。', 'thumbsup'))
     + weightDonutHtml(positions)
     + sectorExposureHtml(portfolio.sector_exposure || [])
     + homeCurrencyHtml(portfolio.home_currency_summary || {}, positions);
@@ -1342,7 +1346,7 @@ async function renderDividends(element) {
 }
 
 function receiptsTableHtml(receipts) {
-  if (!receipts.length) return emptyStateHtml('匯入的紀錄裡沒有股利資料。', 'coin');
+  if (!receipts.length) return emptyStateHtml('匯入的紀錄裡沒有股利資料。', 'party');
   return '<div class="table-wrap"><table class="grid"><thead><tr>'
     + '<th>代號</th><th class="num">股利總額</th><th class="num">預扣稅</th>'
     + '<th class="num">實收淨額</th><th class="num opt">實際稅率</th>'
@@ -1389,7 +1393,7 @@ function receiptsTotalRowHtml(receipts) {
 }
 
 function forecastsTableHtml(forecasts) {
-  if (!forecasts.length) return emptyStateHtml('目前持倉沒有配息股。', 'coin');
+  if (!forecasts.length) return emptyStateHtml('目前持倉沒有配息股。');
   return '<div class="table-wrap"><table class="grid"><thead><tr>'
     + '<th>代號</th><th class="num opt">股數</th><th class="num opt">每股年配息</th>'
     + '<th class="num">年化總額</th><th class="num">稅後預估</th>'
@@ -1423,7 +1427,7 @@ function loadWatchlist() { loadInto(byId('watchlist-body'), renderWatchlist); }
 async function renderWatchlist(element) {
   var rows = await getJson('/watchlist');
   if (!rows || !rows.length) {
-    element.innerHTML = emptyStateHtml('監控清單是空的，用下面的表單加一檔。', 'face');
+    element.innerHTML = emptyStateHtml('監控清單是空的，用下面的表單加一檔。', 'bull');
     return;
   }
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'
@@ -1853,7 +1857,7 @@ function blockStrayDrops() {
 async function renderManualPositions(element) {
   var positions = await getJson('/positions/manual');
   if (!positions || !positions.length) {
-    element.innerHTML = emptyStateHtml('目前沒有手動持倉。', 'coins');
+    element.innerHTML = emptyStateHtml('目前沒有手動持倉。', 'thumbsup');
     return;
   }
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'

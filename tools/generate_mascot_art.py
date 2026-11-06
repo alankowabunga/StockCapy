@@ -5,7 +5,9 @@ Run with Pillow and numpy installed: `uv pip install pillow numpy && python tool
 Sources (all with a white background):
   assets/mascot-flat-source.jpg    flat head, for small spots (header, favicon, footer, avatar)
   assets/mascot-banner-source.jpg  wide 3D scene, for the README banner and the larger web art
-Outputs go to assets/ (docs, avatar) and src/portfolio/web/static/ (favicon, header logo, art/).
+  assets/mascot-<name>-source.jpg  3D sticker poses (party, thumbsup, bull, winner), cut out to transparent
+Outputs go to assets/ (docs, avatar, stickers/) and src/portfolio/web/static/ (favicon, header logo, art/).
+assets/README.md lists every picture and where it is used; keep it in step when adding one.
 """
 
 from __future__ import annotations
@@ -24,11 +26,14 @@ BANNER = ASSETS / "mascot-banner-source.jpg"
 # Crops of the banner (left, top, right, bottom, in source pixels) -> one empty-state picture each.
 BANNER_CROPS = {
     "login": ((100, 90, 1720, 1660), 640),  # whole scene, for the sign-in card
-    "face": ((470, 180, 1250, 960), 240),  # the mascot's head, for "nothing here yet" states
-    "coins": ((640, 1280, 1560, 1700), 460),  # coin stacks, for empty positions
-    "chart": ((1200, 220, 1900, 840), 360),  # red arrow over candles, for empty charts
-    "coin": ((1320, 1100, 1660, 1400), 200),  # one flying coin, for empty dividends
+    "face": ((470, 180, 1250, 960), 240),  # the mascot's head, for the empty smart-alerts state
+    "chart": ((1200, 220, 1900, 840), 360),  # red arrow over candles, for empty charts and logs
 }
+
+# Transparent sticker poses, all on a white background in the source.
+STICKERS = ("party", "thumbsup", "bull", "winner")
+STICKER_WEB_WIDTH = 360  # shown at ~180px; 2x for high-density screens
+STICKER_DOC_WIDTH = 640
 
 
 def _background_mask(image: Image.Image, tolerance: int = 14) -> np.ndarray:
@@ -136,10 +141,22 @@ def build_web_art(output_dir: Path = ART) -> None:
         _save(_rounded(piece), output_dir / f"{name}.webp", quality=86, method=6)
 
 
+def build_stickers(output_assets: Path = ASSETS, output_dir: Path = ART) -> None:
+    for name in STICKERS:
+        sticker = cutout(Image.open(ASSETS / f"mascot-{name}-source.jpg"))
+        sticker = sticker.crop(sticker.getchannel("A").point(lambda v: 255 if v > 20 else 0).getbbox())
+        for width, path, options in (
+            (STICKER_WEB_WIDTH, output_dir / f"sticker-{name}.webp", {"quality": 90, "method": 6}),
+            (STICKER_DOC_WIDTH, output_assets / "stickers" / f"{name}.png", {"optimize": True}),
+        ):
+            _save(sticker.resize((width, round(sticker.height * width / sticker.width)), Image.LANCZOS), path, **options)
+
+
 def main() -> None:
     build_flat()
     build_banner()
     build_web_art()
+    build_stickers()
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ import pandas as pd
 from .firstrade_csv import BrokerageTransaction
 from .holdings import Position
 from .market import MarketDataClient
+from .markets import is_taiwan_symbol
 
 
 @dataclass(frozen=True)
@@ -30,6 +31,12 @@ class DividendReceipt:
 
 
 TRAILING_YEAR_DAYS = 365
+
+# Taiwan: a single payment of NT$20,000 or more carries the 2.11% 二代健保補充保費;
+# smaller ones carry nothing. Income tax depends on how the owner files, so it is not
+# estimated (D31). The US 30% non-resident withholding does not apply to Taiwan stocks.
+TAIWAN_NHI_THRESHOLD = 20_000.0
+TAIWAN_NHI_RATE = 0.0211
 
 
 @dataclass(frozen=True)
@@ -83,6 +90,10 @@ def resolve_annual_dividend_rate(client: MarketDataClient, symbol: str) -> float
     return declared if declared > 0 else trailing_twelve_month_dividend(client, symbol)
 
 
+def taiwan_deduction_rate(gross_payment: float) -> float:
+    return TAIWAN_NHI_RATE if gross_payment >= TAIWAN_NHI_THRESHOLD else 0.0
+
+
 def forecast_dividends(
     client: MarketDataClient, positions: list[Position], withholding_rate: float
 ) -> list[ForwardDividendForecast]:
@@ -91,12 +102,17 @@ def forecast_dividends(
         annual_rate = resolve_annual_dividend_rate(client, position.symbol)
         if annual_rate <= 0:
             continue
+        rate = withholding_rate
+        if is_taiwan_symbol(position.symbol):
+            # The year's total stands in for one payment: payers that split it into
+            # several smaller ones may owe less, so this errs toward the larger deduction.
+            rate = taiwan_deduction_rate(position.quantity * annual_rate)
         forecasts.append(
             ForwardDividendForecast(
                 symbol=position.symbol,
                 quantity=position.quantity,
                 annual_rate_per_share=annual_rate,
-                withholding_rate=withholding_rate,
+                withholding_rate=rate,
             )
         )
     return sorted(forecasts, key=lambda item: -item.gross_annual_income)

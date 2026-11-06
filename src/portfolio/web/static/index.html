@@ -402,7 +402,7 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
     <div class="panel">
       <div class="panel-head">
         <h2>手動持倉</h2>
-        <p class="hint">手動持倉會覆蓋同代號由 CSV 推導的持倉，請輸入該代號的完整股數與整體均價。</p>
+        <p class="hint">手動持倉會覆蓋同代號由 CSV 推導的持倉，請輸入該代號的完整股數與整體均價。台股（如 2330）的均價請填<strong>台幣</strong>。</p>
       </div>
       <div id="manual-body"></div>
       <form class="inline" id="manual-form" autocomplete="off" style="margin-top:10px">
@@ -1097,7 +1097,25 @@ function cardHtml(label, valueHtml, subHtml) {
     + (subHtml ? '<div class="sub">' + subHtml + '</div>' : '') + '</div>';
 }
 
+/* 有台股時，主卡片改台幣合計，再列兩個市場各自的小計；美元數字（快照用的單位）退到下面一排。 */
+function twoMarketCardsHtml(summary) {
+  var sub = summary.market_subtotals;
+  var rate = decimals(sub.usd_to_twd, 4, 4);
+  return '<div class="cards">'
+    + cardHtml('市值合計', money(sub.market_value_twd, 'TWD'), '以 USD/TWD ' + rate + ' 折算')
+    + cardHtml('投入成本', money(sub.cost_basis_twd, 'TWD'))
+    + cardHtml('美股小計', money(sub.us.market_value, 'USD'), '成本 ' + money(sub.us.cost_basis, 'USD'))
+    + cardHtml('台股小計', money(sub.tw.market_value, 'TWD'), '成本 ' + money(sub.tw.cost_basis, 'TWD'))
+    + '</div>'
+    + '<div class="cards">'
+    + cardHtml('未實現損益（USD）', signedMoney(summary.unrealized_gain), signedPercent(summary.unrealized_return_percent, 2))
+    + cardHtml('已實現損益（USD）', signedMoney(summary.realized_gain))
+    + '</div>'
+    + missingCostBasisHtml(summary);
+}
+
 function summaryCardsHtml(summary) {
+  if (summary.market_subtotals) return twoMarketCardsHtml(summary);
   return '<div class="cards">'
     + cardHtml('市值合計', money(summary.market_value))
     + cardHtml('投入成本', money(summary.cost_basis))
@@ -1267,7 +1285,13 @@ function loadDividends() { loadInto(byId('dividends-body'), renderDividends); }
 async function renderDividends(element) {
   var dividends = await getJson('/dividends');
   var rate = isNumber(dividends.withholding_rate) ? plainPercent(dividends.withholding_rate * 100, 0) : DASH;
-  element.innerHTML = '<div class="chips"><span class="chip">預扣稅率 <b>' + rate + '</b></span></div>'
+  var hasTaiwan = (dividends.forecasts || []).concat(dividends.receipts || [])
+    .some(function (row) { return currencyForSymbol(row.symbol) === 'TWD'; });
+  var taiwanNote = hasTaiwan
+    ? '<div class="box dim" style="margin-top:8px">台股不適用美股預扣：單筆股利滿 NT$20,000 才扣 2.11% 二代健保補充保費，'
+      + '預估以全年股利視為一筆（分次配息者實際可能較少）；所得稅依個人申報方式，<strong>未計入</strong>。</div>'
+    : '';
+  element.innerHTML = '<div class="chips"><span class="chip">' + (hasTaiwan ? '美股' : '') + '預扣稅率 <b>' + rate + '</b></span></div>' + taiwanNote
     + '<h3 style="margin:12px 0 6px">已領股利</h3>' + receiptsTableHtml(dividends.receipts || [])
     + '<h3 style="margin:14px 0 6px">未來一年預估</h3>' + forecastsTableHtml(dividends.forecasts || []);
 }
@@ -1289,14 +1313,34 @@ function receiptRowHtml(receipt) {
     + numCell(plainPercent(receipt.effective_withholding_percent, 1), 'opt') + '</tr>';
 }
 
+/* 混幣別不能直接相加：每種幣別各一列合計；只有一種幣別時維持原本的「合計」。 */
+function groupByCurrency(rows) {
+  var groups = {};
+  rows.forEach(function (row) {
+    var code = currencyForSymbol(row.symbol);
+    (groups[code] = groups[code] || []).push(row);
+  });
+  return Object.keys(groups).sort(function (a, b) { return (a === 'USD' ? 0 : 1) - (b === 'USD' ? 0 : 1); })
+    .map(function (code) { return {currency: code, rows: groups[code]}; });
+}
+
+function totalLabel(currency, groupCount) {
+  if (groupCount === 1) return '合計';
+  return currency === 'TWD' ? '合計（台股 TWD）' : '合計（美股 USD）';
+}
+
 function receiptsTotalRowHtml(receipts) {
-  var gross = sumBy(receipts, 'gross_amount');
-  var withheld = sumBy(receipts, 'withheld_amount');
-  return '<tr class="total"><td>合計</td>'
-    + numCell(money(gross))
-    + numCell('<span class="down">-' + money(withheld) + '</span>')
-    + numCell('<span class="up">' + money(sumBy(receipts, 'net_amount')) + '</span>')
-    + numCell(plainPercent(gross ? withheld / gross * 100 : null, 1), 'opt') + '</tr>';
+  var groups = groupByCurrency(receipts);
+  return groups.map(function (group) {
+    var gross = sumBy(group.rows, 'gross_amount');
+    var withheld = sumBy(group.rows, 'withheld_amount');
+    var c = group.currency;
+    return '<tr class="total"><td>' + totalLabel(c, groups.length) + '</td>'
+      + numCell(money(gross, c))
+      + numCell('<span class="down">-' + money(withheld, c) + '</span>')
+      + numCell('<span class="up">' + money(sumBy(group.rows, 'net_amount'), c) + '</span>')
+      + numCell(plainPercent(gross ? withheld / gross * 100 : null, 1), 'opt') + '</tr>';
+  }).join('');
 }
 
 function forecastsTableHtml(forecasts) {
@@ -1317,10 +1361,14 @@ function forecastRowHtml(forecast) {
 }
 
 function forecastsTotalRowHtml(forecasts) {
-  return '<tr class="total"><td>合計</td>'
-    + '<td class="num opt"></td><td class="num opt"></td>'
-    + numCell(money(sumBy(forecasts, 'gross_annual_income')))
-    + numCell('<span class="up">' + money(sumBy(forecasts, 'net_annual_income')) + '</span>') + '</tr>';
+  var groups = groupByCurrency(forecasts);
+  return groups.map(function (group) {
+    var c = group.currency;
+    return '<tr class="total"><td>' + totalLabel(c, groups.length) + '</td>'
+      + '<td class="num opt"></td><td class="num opt"></td>'
+      + numCell(money(sumBy(group.rows, 'gross_annual_income'), c))
+      + numCell('<span class="up">' + money(sumBy(group.rows, 'net_annual_income'), c) + '</span>') + '</tr>';
+  }).join('');
 }
 
 /* ---------- 監控 ---------- */

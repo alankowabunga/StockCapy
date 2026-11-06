@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from .firstrade_csv import BrokerageTransaction
+from .markets import is_taiwan_symbol
 
 SHARE_EPSILON = 1e-6
 
@@ -110,6 +111,17 @@ class PositionLedger:
 
     def total_realized_gain(self) -> float:
         return sum(position.realized_gain for position in self.positions.values())
+
+    def realized_gain_by_market(self) -> tuple[float, float]:
+        """(US gain in USD, Taiwan gain in TWD): each in its own currency, because adding
+        them needs today's exchange rate, which the ledger does not know."""
+        us = tw = 0.0
+        for position in self.positions.values():
+            if is_taiwan_symbol(position.symbol):
+                tw += position.realized_gain
+            else:
+                us += position.realized_gain
+        return us, tw
 
 
 @dataclass(frozen=True)

@@ -83,6 +83,22 @@ def _home_currency_summary(performance: PortfolioPerformance, home_currency: str
     }
 
 
+def _market_subtotals(performance: PortfolioPerformance) -> dict | None:
+    """Only present with Taiwan holdings: TWD is the headline then, with each market's
+    own subtotal beside it. The USD figures above stay the snapshot unit (D31)."""
+    if not performance.has_taiwan_positions:
+        return None
+    us_value, us_cost = performance.market_subtotal(taiwan=False)
+    tw_value, tw_cost = performance.market_subtotal(taiwan=True)
+    return {
+        "usd_to_twd": performance.usd_to_twd,
+        "market_value_twd": performance.total_market_value_twd,
+        "cost_basis_twd": performance.total_cost_basis_twd,
+        "us": {"currency": "USD", "market_value": us_value, "cost_basis": us_cost},
+        "tw": {"currency": "TWD", "market_value": tw_value, "cost_basis": tw_cost},
+    }
+
+
 def serialize_portfolio(performance: PortfolioPerformance, home_currency: str = "TWD") -> dict:
     return {
         "summary": {
@@ -92,6 +108,7 @@ def serialize_portfolio(performance: PortfolioPerformance, home_currency: str = 
             "unrealized_return_percent": performance.total_return_percent,
             "realized_gain": performance.realized_gain,
             "has_complete_cost_basis": performance.has_complete_cost_basis,
+            "market_subtotals": _market_subtotals(performance),
         },
         "home_currency_summary": _home_currency_summary(performance, home_currency),
         "positions": [serialize_position(p, performance) for p in performance.positions],

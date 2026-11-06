@@ -86,7 +86,7 @@ def save_position_snapshot(
             position.symbol,
             position.quantity,
             position.last_price,
-            position.market_value,
+            position.market_value_usd,
             position.average_cost,
         )
         for position in performance.positions

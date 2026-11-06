@@ -92,6 +92,9 @@ def _load_performance(client: MarketDataClient) -> PortfolioPerformance:
             "或 `portfolio add-position <SYM> --shares N --avg-cost X` 手動輸入。[/yellow]"
         )
         raise typer.Exit(code=1) from error
+    except service.ExchangeRateUnavailableError as error:
+        console.print(f"[red]{error}[/red]。請稍後再試。")
+        raise typer.Exit(code=1) from error
 
 
 def _resolve_for_symbols(
@@ -216,6 +219,11 @@ def show_dividends() -> None:
         f"[dim]稅後預估採用預扣率 {overview.withholding_rate:.0%}"
         "（台灣居民非美國人股利預扣，可用 PORTFOLIO_NRA_WITHHOLDING 調整）。[/dim]"
     )
+    if any(currency_for_symbol(item.symbol) == "TWD" for item in overview.forecasts):
+        console.print(
+            "[dim]台股不適用美股預扣：單筆股利滿 NT$20,000 才扣 2.11% 二代健保補充保費，"
+            "預估以全年股利視為一筆，分次配息者實際可能較少；所得稅依個人申報方式，未計入。[/dim]"
+        )
 
 
 @app.command("snapshot")

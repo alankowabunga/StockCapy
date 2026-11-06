@@ -18,11 +18,21 @@ from .holdings import Position, PositionLedger, build_ledger
 from .indicators import SHORT_TREND_WINDOW, compute_indicators, moving_average_series
 from .market import MarketDataClient
 from .market_calendar import is_close_series_current
-from .markets import US_MARKET, Market, market_for_symbol, resolve_symbol_input
+from .markets import (
+    US_MARKET,
+    Market,
+    is_taiwan_symbol,
+    market_for_symbol,
+    resolve_symbol_input,
+)
 from .renotify import LastNotification, decide_renotification
 from .renotify import signal_conditions_key as _conditions_key
 from .notifiers import DeliveryResult, any_delivered, dispatch_alerts, dispatch_signals
-from .performance import PortfolioPerformance, build_position_performance
+from .performance import (
+    ExchangeRateUnavailableError,
+    PortfolioPerformance,
+    build_position_performance,
+)
 from .repository import (
     load_alert_rules,
     load_last_signal_prices,
@@ -88,6 +98,11 @@ class DividendOverview:
 
 def load_positions(settings: Settings) -> tuple[list[Position], float]:
     """CSV-derived positions plus manually entered ones; manual entry wins on conflict."""
+    ordered, ledger = _load_positions_and_ledger(settings)
+    return ordered, ledger.total_realized_gain()
+
+
+def _load_positions_and_ledger(settings: Settings) -> tuple[list[Position], PositionLedger]:
     with open_store(settings.database_path) as connection:
         transactions = load_transactions(connection)
         manual = load_manual_positions(connection)
@@ -95,7 +110,7 @@ def load_positions(settings: Settings) -> tuple[list[Position], float]:
     merged = _positions_with_proven_shares(ledger, transactions)
     merged.update({position.symbol: position for position in manual})
     ordered = sorted(merged.values(), key=lambda position: position.symbol)
-    return ordered, ledger.total_realized_gain()
+    return ordered, ledger
 
 
 def _positions_with_proven_shares(
@@ -116,21 +131,53 @@ def _positions_with_proven_shares(
 
 
 def load_performance(settings: Settings, client: MarketDataClient) -> PortfolioPerformance:
-    positions, realized_gain = load_positions(settings)
+    positions, ledger = _load_positions_and_ledger(settings)
     if not positions:
         raise NoPositionsError("沒有任何持倉")
     quotes = client.quotes([position.symbol for position in positions])
     rate_now = _current_home_rate(settings, client)
+    symbols = [position.symbol for position in positions] + list(ledger.positions)
+    usd_to_twd = _usd_to_twd_rate(settings, client, symbols, rate_now)
     performances = [
         build_position_performance(
             position,
             quotes[position.symbol],
             client.fundamentals(position.symbol).text("sector"),
             rate_now,
+            usd_to_twd,
+            settings.home_currency,
         )
         for position in positions
     ]
+    realized_gain = _realized_gain_usd(ledger, usd_to_twd)
     return PortfolioPerformance(positions=performances, realized_gain=realized_gain)
+
+
+def _realized_gain_usd(ledger: PositionLedger, usd_to_twd: float | None) -> float:
+    us_gain, tw_gain = ledger.realized_gain_by_market()
+    if not tw_gain:
+        return us_gain
+    if not usd_to_twd:
+        raise ExchangeRateUnavailableError("已實現損益含台股，需要 USD/TWD 匯率才能合計")
+    return us_gain + tw_gain / usd_to_twd
+
+
+def _usd_to_twd_rate(
+    settings: Settings,
+    client: MarketDataClient,
+    symbols: list[str],
+    home_rate: float | None,
+) -> float | None:
+    """Only fetched when a Taiwan symbol needs it, so US-only portfolios make no extra
+    call. Reuses the home-currency rate when home is TWD."""
+    if not any(is_taiwan_symbol(symbol) for symbol in symbols):
+        return None
+    if settings.home_currency.upper() == "TWD" and home_rate:
+        return home_rate
+    try:
+        return client.latest_exchange_rate(pair_symbol("TWD"))
+    except Exception:  # noqa: BLE001 - surfaced as a clear error by the caller
+        return None
 
 
 def _current_home_rate(settings: Settings, client: MarketDataClient) -> float | None:

@@ -54,7 +54,7 @@ def render_holdings(console: Console, performance: PortfolioPerformance) -> None
     table = Table(title="持倉明細", header_style="bold cyan")
     for column in ("代號", "股數", "平均成本", "現價", "市值", "未實現損益", "報酬率", "權重"):
         table.add_column(column, justify="right" if column != "代號" else "left")
-    for position in sorted(performance.positions, key=lambda p: -p.market_value):
+    for position in sorted(performance.positions, key=lambda p: -p.market_value_usd):
         table.add_row(
             position.symbol,
             _quantity_cell(position),
@@ -94,8 +94,28 @@ def render_portfolio_summary(console: Console, performance: PortfolioPerformance
         f"  ({_colored_percent(performance.total_return_percent)})",
         f"已實現損益    {_colored_amount(performance.realized_gain)}",
     ]
+    if performance.has_taiwan_positions:
+        lines = _two_market_summary_lines(performance, lines)
     lines.extend(_missing_cost_basis_lines(performance))
     console.print(Panel("\n".join(lines), title="帳戶總覽", border_style="cyan"))
+
+
+def _two_market_summary_lines(performance: PortfolioPerformance, usd_lines: list[str]) -> list[str]:
+    """With Taiwan holdings the headline is TWD; each market's own subtotal follows, and
+    the USD lines (the snapshot unit) are kept below, labelled."""
+    us_value, us_cost = performance.market_subtotal(taiwan=False)
+    tw_value, tw_cost = performance.market_subtotal(taiwan=True)
+    rate = performance.usd_to_twd
+    return [
+        f"市值合計      {format_money(performance.total_market_value_twd, 'TWD')}"
+        f"（以 USD/TWD {rate:,.4f} 折算）",
+        f"投入成本      {format_money(performance.total_cost_basis_twd, 'TWD')}",
+        f"  美股小計    {format_money(us_value, 'USD')}（成本 {format_money(us_cost, 'USD')}）",
+        f"  台股小計    {format_money(tw_value, 'TWD')}（成本 {format_money(tw_cost, 'TWD')}）",
+        "",
+        "[dim]以下為美元計價（每日快照與歷史曲線用的單位）[/dim]",
+        *usd_lines,
+    ]
 
 
 def _missing_cost_basis_lines(performance: PortfolioPerformance) -> list[str]:
@@ -219,17 +239,34 @@ def render_dividend_receipts(
     console.print(table)
 
 
+def _by_currency(items, amount_of) -> dict[str, list]:
+    """Groups rows by their own currency; USD first so US-only output is untouched."""
+    groups: dict[str, list] = {}
+    for item in items:
+        groups.setdefault(currency_for_symbol(item.symbol), []).append(item)
+    return {code: groups[code] for code in sorted(groups, key=lambda code: code != "USD")}
+
+
+def _total_label(currency: str, grouped: dict) -> str:
+    """A lone currency keeps the plain label; mixed ones must say which they sum."""
+    if len(grouped) == 1:
+        return "[bold]合計[/bold]"
+    return f"[bold]合計（{'台股 TWD' if currency == 'TWD' else '美股 USD'}）[/bold]"
+
+
 def _add_receipt_total_row(table: Table, receipts: dict[str, DividendReceipt]) -> None:
-    gross = sum(receipt.gross_amount for receipt in receipts.values())
-    withheld = sum(receipt.withheld_amount for receipt in receipts.values())
+    grouped = _by_currency(receipts.values(), None)
     table.add_section()
-    table.add_row(
-        "[bold]合計[/bold]",
-        f"[bold]${gross:,.2f}[/bold]",
-        f"[bold red]-${withheld:,.2f}[/bold red]",
-        f"[bold green]${gross - withheld:,.2f}[/bold green]",
-        f"{withheld / gross * 100 if gross else 0:.1f}%",
-    )
+    for currency, rows in grouped.items():
+        gross = sum(receipt.gross_amount for receipt in rows)
+        withheld = sum(receipt.withheld_amount for receipt in rows)
+        table.add_row(
+            _total_label(currency, grouped),
+            f"[bold]{format_money(gross, currency)}[/bold]",
+            f"[bold red]-{format_money(withheld, currency)}[/bold red]",
+            f"[bold green]{format_money(gross - withheld, currency)}[/bold green]",
+            f"{withheld / gross * 100 if gross else 0:.1f}%",
+        )
 
 
 def render_dividend_forecast(
@@ -255,14 +292,16 @@ def render_dividend_forecast(
 
 
 def _add_forecast_total_row(table: Table, forecasts: list[ForwardDividendForecast]) -> None:
-    gross = sum(forecast.gross_annual_income for forecast in forecasts)
-    net = sum(forecast.net_annual_income for forecast in forecasts)
+    grouped = _by_currency(forecasts, None)
     table.add_section()
-    table.add_row(
-        "[bold]合計[/bold]", "", "",
-        f"[bold]${gross:,.2f}[/bold]",
-        f"[bold green]${net:,.2f}[/bold green]",
-    )
+    for currency, rows in grouped.items():
+        gross = sum(forecast.gross_annual_income for forecast in rows)
+        net = sum(forecast.net_annual_income for forecast in rows)
+        table.add_row(
+            _total_label(currency, grouped), "", "",
+            f"[bold]{format_money(gross, currency)}[/bold]",
+            f"[bold green]{format_money(net, currency)}[/bold green]",
+        )
 
 
 def _format_gap(gap_percent: float | None) -> str:

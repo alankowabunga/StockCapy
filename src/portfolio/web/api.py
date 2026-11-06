@@ -34,6 +34,7 @@ from ..repository import (
     save_alert_rule,
     save_manual_position,
 )
+from ..performance import ExchangeRateUnavailableError
 from ..service import NoPositionsError, load_performance, load_positions, resolve_for_symbols
 from ..signal_config import (
     ThresholdOverride,
@@ -227,6 +228,8 @@ def _require_performance(settings: Settings, client: MarketDataClient):
         return load_performance(settings, client)
     except NoPositionsError as error:
         raise HTTPException(status_code=409, detail="沒有任何持倉，請先匯入 CSV 或手動輸入") from error
+    except ExchangeRateUnavailableError as error:
+        raise HTTPException(status_code=503, detail=f"{error}，請稍後再試") from error
 
 
 def _register_portfolio_route(app: FastAPI, settings: Settings, client: MarketDataClient) -> None:

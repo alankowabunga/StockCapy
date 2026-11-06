@@ -275,3 +275,87 @@ def test_hidden_holdings_remove_cost_figures_from_every_style():
         assert "$100.00" not in text
         assert "-15.0%" not in text
         assert "你持倉均價" not in text
+
+
+# ---- valuation confidence in the alert card (A1, A2, A3, A5) -------------------------
+
+from portfolio.signals import ValuationContext  # noqa: E402
+
+FORBIDDEN_ADVICE = ("應該買", "應該賣", "值得進場", "建議買", "建議賣", "建議進場")
+
+
+def _valued(context):
+    base = evaluate_signal(_snapshot(), pricing=BOUGHT_AT_100)
+    return dataclasses.replace(
+        base, reference_price=120.0, buy_below_price=96.0, valuation_basis="估值模型",
+        valuation_context=context,
+    )
+
+
+LONE = ValuationContext(
+    model_names=("Target P/E",), uncertainty_tier="高",
+    uncertainty_reasons=("只有單一模型適用",), margin_of_safety=0.40,
+    target_pe=18.0, multiple_source="default",
+)
+SUPPORTED = ValuationContext(
+    model_names=("Target P/E", "PEG（成長調整）", "DCF（現金流折現）"), uncertainty_tier="低",
+    uncertainty_reasons=(), margin_of_safety=0.20, target_pe=25.0, multiple_source="historical",
+)
+
+
+def test_a_lone_model_is_called_out_with_its_name_and_a_clear_warning():
+    text = narrate_signal(_valued(LONE))
+    assert "⚠️ 這個合理價僅由 1 個模型（Target P/E）推得" in text
+    assert "對假設非常敏感" in text
+
+
+def test_several_models_are_listed_without_the_warning():
+    text = narrate_signal(_valued(SUPPORTED))
+    assert "採計 3 個模型：Target P/E、PEG（成長調整）、DCF（現金流折現）" in text
+    assert "⚠️ 這個合理價僅由" not in text
+
+
+def test_uncertainty_and_the_margin_actually_used_are_shown():
+    text = narrate_signal(_valued(LONE))
+    assert "不確定性：高（只有單一模型適用）" in text
+    assert "入手價已用 40% 安全邊際" in text
+    assert "不確定性：低，入手價已用 20% 安全邊際" in narrate_signal(_valued(SUPPORTED))
+
+
+def test_the_multiple_and_where_it_came_from_are_shown():
+    assert "Target P/E 倍數 18×（預設值，非該股自己的歷史水位）" in narrate_signal(_valued(LONE))
+    assert "Target P/E 倍數 25×（該股自己的歷史 P/E 中位數）" in narrate_signal(_valued(SUPPORTED))
+
+
+def test_a_manual_multiple_says_so():
+    manual = dataclasses.replace(SUPPORTED, target_pe=30.0, multiple_source="manual")
+    assert "Target P/E 倍數 30×（你手動設定）" in narrate_signal(_valued(manual))
+
+
+def test_no_multiple_line_when_target_pe_is_not_one_of_the_models():
+    without = dataclasses.replace(SUPPORTED, target_pe=None)
+    assert "Target P/E 倍數" not in narrate_signal(_valued(without))
+
+
+def test_reference_without_context_adds_nothing_extra():
+    """A5: a fund's trend line (no models) keeps the exact old single line."""
+    text = narrate_signal(_valued(None))
+    assert "📐 參考合理價 USD $120.00" in text
+    assert "不確定性" not in text and "採計" not in text
+
+
+def test_no_reference_price_means_no_confidence_lines_at_all():
+    text = narrate_signal(evaluate_signal(_snapshot(), pricing=BOUGHT_AT_100))
+    assert "不確定性" not in text and "參考合理價" not in text
+
+
+def test_the_confidence_lines_never_slide_into_advice():
+    """G4: it states how shaky the number is, never what to do."""
+    for context in (LONE, SUPPORTED):
+        text = narrate_signal(_valued(context))
+        assert not any(phrase in text for phrase in FORBIDDEN_ADVICE)
+
+
+def test_plain_style_carries_the_confidence_lines_too():
+    text = format_signal_card(_valued(LONE), None, MessageFormat(MessageStyle.PLAIN))
+    assert "⚠️ 這個合理價僅由 1 個模型" in text

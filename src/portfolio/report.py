@@ -206,11 +206,20 @@ def _valuation_verdict(
         )
     model_count = len(report.aggregated_values)
     buy_below = report.buy_below_price(assumptions)
+    margin = report.effective_margin_of_safety(assumptions)
+    assessment = report.uncertainty()
     lines = [
         f"採計模型中位數    {format_money(midpoint, currency)}（{model_count} 個模型）",
         f"相對現價          {_colored_percent(report.upside_percent() or 0)}",
-        f"扣 {assumptions.margin_of_safety:.0%} 安全邊際後  {format_money(buy_below, currency)}",
+        f"扣 {margin:.0%} 安全邊際後  {format_money(buy_below, currency)}",
+        f"不確定性          {assessment.tier}"
+        + (f"（{'、'.join(assessment.reasons)}）" if assessment.reasons else ""),
     ]
+    if margin > assumptions.margin_of_safety:
+        lines.append(
+            f"[dim]你設的安全邊際 {assumptions.margin_of_safety:.0%}，因不確定性自動加寬到 "
+            f"{margin:.0%}；自己指定安全邊際就會照你的。[/dim]"
+        )
     if model_count == 1:
         lines.append("[yellow]只有單一模型適用，結論等同於你的假設，脆弱度高。[/yellow]")
     lines.append(f"\n[dim]{MODEL_CAVEAT}[/dim]")

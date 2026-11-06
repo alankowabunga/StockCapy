@@ -155,3 +155,44 @@ def test_price_position_handles_a_degenerate_range():
     flat = PricePosition("X", 100.0, 0.0, 0.0, 0.0, "EQUITY")
     assert flat.range_percentile is None
     assert flat.premium_to_two_hundred_day_percent is None
+
+
+LONE_MODEL = Fundamentals(
+    symbol="X", values={"trailingEps": 3.0, "forwardEps": 3.1, "sector": "Technology"}
+)  # only Target P/E applies: 3.0 x 18 = 54
+
+
+def test_a_well_supported_value_keeps_the_configured_margin(dividend_payer):
+    """D4: three agreeing models change nothing about the old 20% behaviour."""
+    client = StubMarketDataClient(60.0, dividend_payer, _price_position("EQUITY", 60.0))
+    target = build_entry_target(client, "KO", ASSUMPTIONS)
+    assert target.uncertainty.reasons == ()
+    assert target.margin_of_safety == pytest.approx(0.20)
+
+
+def test_buy_below_and_the_verdict_both_use_the_widened_margin():
+    """D3: a lone model widens 20% to 40%. At 38.6 the price is 39.9% under 54: that
+    clears the user's 20% but not the 40% actually applied, so the verdict must say
+    'not yet at the margin' and buy_below must sit at 54 x 0.6, not 54 x 0.8."""
+    client = StubMarketDataClient(38.6, LONE_MODEL, _price_position("EQUITY", 38.6))
+    target = build_entry_target(client, "X", ASSUMPTIONS)
+    assert target.margin_of_safety == pytest.approx(0.40)
+    assert target.buy_below == pytest.approx(54.0 * 0.6)
+    assert target.verdict.tier == "低於估值，未達安全邊際"
+    assert not target.is_at_or_below_target
+
+
+def test_a_user_chosen_margin_is_never_widened():
+    chosen = ValuationAssumptions(target_price_earnings=18.0, margin_of_safety=0.20, adaptive_margin=False)
+    client = StubMarketDataClient(38.6, LONE_MODEL, _price_position("EQUITY", 38.6))
+    target = build_entry_target(client, "X", chosen)
+    assert target.margin_of_safety == pytest.approx(0.20)
+    assert target.buy_below == pytest.approx(54.0 * 0.8)
+
+
+def test_a_funds_trend_line_has_no_uncertainty_and_keeps_the_users_margin():
+    empty = Fundamentals(symbol="VTI", values={"quoteType": "ETF"})
+    client = StubMarketDataClient(100.0, empty, _price_position("ETF"))
+    target = build_entry_target(client, "VTI", ASSUMPTIONS)
+    assert target.uncertainty is None
+    assert target.margin_of_safety == pytest.approx(0.20)

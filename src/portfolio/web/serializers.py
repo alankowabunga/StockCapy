@@ -129,6 +129,14 @@ def serialize_estimate(estimate: ValuationEstimate) -> dict:
     }
 
 
+def _uncertainty_fields(target: EntryTarget) -> dict:
+    assessment = target.uncertainty
+    return {
+        "uncertainty_tier": assessment.tier if assessment else None,
+        "uncertainty_reasons": list(assessment.reasons) if assessment else [],
+    }
+
+
 def serialize_target(target: EntryTarget, provenance: tuple[str, float | None]) -> dict:
     position = target.price_position
     return {
@@ -141,6 +149,12 @@ def serialize_target(target: EntryTarget, provenance: tuple[str, float | None]) 
         "gap_to_buy_below_percent": target.gap_to_buy_below_percent,
         "basis": target.basis,
         "model_count": target.model_count,
+        # The margin actually applied vs the one the user configured: they differ when the
+        # fair value is shaky and the tool widened the cushion (see uncertainty.py).
+        "margin_of_safety": target.margin_of_safety,
+        "configured_margin_of_safety": target.assumptions.margin_of_safety,
+        "target_pe": target.assumptions.target_price_earnings,
+        **_uncertainty_fields(target),
         "trailing_pe": target.trailing_pe,
         "week52_low": position.week52_low or None,
         "week52_high": position.week52_high or None,

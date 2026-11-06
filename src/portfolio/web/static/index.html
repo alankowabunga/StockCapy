@@ -677,7 +677,7 @@ function basisHtml(target) {
 function targetDetailRowHtml(target, index) {
   return '<tr class="row-detail" data-detail="' + index + '" hidden><td colspan="8"><div class="detail">'
     + '<div class="detail-col"><h4>估值模型</h4>' + estimatesTableHtml(target.estimates || [], currencyForSymbol(target.symbol))
-    + singleModelCaveatHtml(target) + assumptionProvenanceHtml(target) + '</div>'
+    + singleModelCaveatHtml(target) + uncertaintyHtml(target) + assumptionProvenanceHtml(target) + '</div>'
     + '<div class="detail-col"><h4>價格位置 <span class="dim">與內在價值無關，只看它自己的近期區間</span></h4>'
     + pricePositionHtml(target) + '</div>'
     + peOptionsColumnHtml(target)
@@ -893,6 +893,19 @@ function estimateStateHtml(estimate) {
 function singleModelCaveatHtml(target) {
   if (target.basis !== '估值模型' || target.model_count !== 1) return '';
   return '<div class="box warn" style="margin-top:8px">只有單一模型適用，結論等同於你的假設，脆弱度高。</div>';
+}
+
+function uncertaintyHtml(target) {
+  if (target.basis !== '估值模型' || !target.uncertainty_tier) return '';
+  var reasons = (target.uncertainty_reasons || []).join('、');
+  var widened = isNumber(target.margin_of_safety) && isNumber(target.configured_margin_of_safety)
+    && target.margin_of_safety > target.configured_margin_of_safety + 1e-9;
+  return '<dl class="facts" style="margin-top:8px">'
+    + '<dt>不確定性</dt><dd>' + esc(target.uncertainty_tier) + (reasons ? '（' + esc(reasons) + '）' : '') + '</dd>'
+    + '<dt>實際安全邊際</dt><dd>' + plainPercent(target.margin_of_safety * 100, 0)
+    + (widened ? ' <span class="dim">（你設 ' + plainPercent(target.configured_margin_of_safety * 100, 0) + '，已加寬）</span>' : '')
+    + '</dd>'
+    + '<dt>Target P/E 倍數</dt><dd>' + ratio(target.target_pe, 1) + '</dd></dl>';
 }
 
 function assumptionProvenanceHtml(target) {

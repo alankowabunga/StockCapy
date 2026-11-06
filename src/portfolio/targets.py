@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from .entry_verdict import EntryVerdict, VerdictInputs, build_entry_verdict
 from .holdings import Position
 from .market import MarketDataClient, PricePosition
+from .uncertainty import UncertaintyAssessment
 from .valuation import ValuationAssumptions, ValuationReport, build_valuation_report
 
 VALUATION_BASIS = "估值模型"
@@ -55,11 +56,23 @@ class EntryTarget:
         return NO_BASIS
 
     @property
+    def uncertainty(self) -> UncertaintyAssessment | None:
+        """None when the reference is not model-based (a fund's trend line, or nothing)."""
+        return self.valuation.uncertainty() if self.model_count else None
+
+    @property
+    def margin_of_safety(self) -> float:
+        """The margin actually applied: the user's, widened when the fair value is shaky."""
+        if self.model_count:
+            return self.valuation.effective_margin_of_safety(self.assumptions)
+        return self.assumptions.margin_of_safety
+
+    @property
     def buy_below(self) -> float | None:
         reference = self.reference_price
         if reference is None:
             return None
-        return reference * (1 - self.assumptions.margin_of_safety)
+        return reference * (1 - self.margin_of_safety)
 
     @property
     def upside_percent(self) -> float | None:
@@ -75,7 +88,7 @@ class EntryTarget:
         return build_entry_verdict(
             VerdictInputs(
                 upside_percent=self.upside_percent,
-                margin_of_safety=self.assumptions.margin_of_safety,
+                margin_of_safety=self.margin_of_safety,
                 model_count=self.model_count,
             )
         )

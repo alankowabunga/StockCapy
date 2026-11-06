@@ -46,9 +46,13 @@ def test_three_presets_are_always_offered():
 def test_each_option_previews_the_price_it_would_produce():
     choices = build_target_pe_choices(_context(), historical=None)
     growth = next(c for c in choices.candidates if c.target_pe == GROWTH_PE)
-    # Trailing EPS, not forward: the multiple is a trailing-basis number.
-    assert growth.fair_value == pytest.approx(17.94 * GROWTH_PE)
-    assert growth.buy_below == pytest.approx(17.94 * GROWTH_PE * 0.8)
+    # Trailing EPS, not forward: the multiple is a trailing-basis number. The PEG model
+    # also applies (31% expected growth, capped at 20%: forward EPS 23.59 x 20), so the
+    # reference is the median of the two. The two agree within a few percent, so the
+    # margin stays at the user's 20%.
+    target_pe_value = 17.94 * GROWTH_PE
+    assert growth.fair_value == pytest.approx((target_pe_value + 23.59 * 20.0) / 2)
+    assert growth.buy_below == pytest.approx(growth.fair_value * 0.8)
 
 
 def test_each_option_says_what_it_claims_against_the_market_price():
@@ -65,16 +69,37 @@ def test_a_cheap_multiple_reads_as_above_value_and_a_rich_one_reaches_the_margin
     choices = build_target_pe_choices(_context(), historical=None)
     by_pe = {c.target_pe: c for c in choices.candidates}
     assert by_pe[CONSERVATIVE_PE].verdict.tier == TIER_ABOVE_VALUE
-    assert by_pe[GROWTH_PE].verdict.tier == TIER_ABOVE_VALUE  # 448 < 490, still above
-    richer = build_target_pe_choices(_context(target_pe=35.0), historical=None)
+    assert by_pe[GROWTH_PE].verdict.tier == TIER_ABOVE_VALUE  # ~460 < 490, still above
+    # Median of (17.94 x 45, PEG 471.8) = ~640, 30% above the price: past the 20% margin.
+    richer = build_target_pe_choices(_context(target_pe=45.0), historical=None)
     current = next(c for c in richer.candidates if c.label == CURRENT_LABEL)
     assert current.verdict.tier == TIER_AT_MARGIN
 
 
+SLOW_GROWER = Fundamentals(
+    symbol="MSFT",
+    values={"trailingEps": 17.94, "forwardEps": 18.5, "bookValue": 59.57,
+            "trailingPE": 27.33, "dividendYield": 0.73, "sector": "Technology"},
+)
+
+
 def test_no_option_carries_an_action_hint_while_a_single_model_applies():
-    choices = build_target_pe_choices(_context(), historical=None)
+    """Expected growth under 15% keeps PEG out, so only Target P/E applies."""
+    context = TargetPeContext(
+        symbol="MSFT",
+        last_price=PRICE,
+        fundamentals=SLOW_GROWER,
+        assumptions=ValuationAssumptions(),
+    )
+    choices = build_target_pe_choices(context, historical=None)
     assert all(c.verdict.action_hint == HINT_INSUFFICIENT for c in choices.candidates)
     assert all(c.model_count == 1 for c in choices.candidates)
+
+
+def test_a_growth_stock_has_two_models_so_the_options_can_carry_a_hint():
+    choices = build_target_pe_choices(_context(), historical=None)
+    assert all(c.model_count == 2 for c in choices.candidates)
+    assert all(not c.verdict.is_fragile for c in choices.candidates)
 
 
 def test_a_stable_history_becomes_a_selectable_option():

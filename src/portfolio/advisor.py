@@ -146,7 +146,40 @@ def _valuation_block(signal: Signal) -> list[str]:
         line += f"、入手價 {format_money(signal.buy_below_price, signal.currency)}（{reached}）"
     if signal.valuation_basis:
         line += f"。依據：{signal.valuation_basis}"
-    return [line]
+    return [line, *_valuation_confidence_lines(signal)]
+
+
+# Where the Target P/E multiple came from; the default is the least stock-specific.
+_MULTIPLE_SOURCE_LABELS = {
+    "default": "預設值，非該股自己的歷史水位",
+    "historical": "該股自己的歷史 P/E 中位數",
+    "manual": "你手動設定",
+    "命令列": "命令列臨時指定",
+}
+
+
+def _valuation_confidence_lines(signal: Signal) -> list[str]:
+    """How much the number above rests on assumptions. A lone fair value reads as fact;
+    stating the model count, the uncertainty and the multiple's origin keeps it honest."""
+    context = signal.valuation_context
+    if context is None:
+        return []
+    models = "、".join(context.model_names)
+    if context.is_fragile:
+        lead = (
+            f"⚠️ 這個合理價僅由 {len(context.model_names)} 個模型（{models}）推得，"
+            "對假設非常敏感，只能當粗略參考。"
+        )
+    else:
+        lead = f"採計 {len(context.model_names)} 個模型：{models}。"
+    uncertainty = f"不確定性：{context.uncertainty_tier}"
+    if context.uncertainty_reasons:
+        uncertainty += f"（{'、'.join(context.uncertainty_reasons)}）"
+    uncertainty += f"，入手價已用 {context.margin_of_safety:.0%} 安全邊際"
+    if context.target_pe is not None:
+        source = _MULTIPLE_SOURCE_LABELS.get(context.multiple_source, context.multiple_source)
+        uncertainty += f"；Target P/E 倍數 {context.target_pe:g}×（{source}）"
+    return [lead, uncertainty + "。"]
 
 
 def _price_block(signal: Signal) -> list[str]:

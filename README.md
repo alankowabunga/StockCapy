@@ -313,10 +313,12 @@ stockcapy assume default --target-pe 20    # 改通用預設
 
 ## 合理價評估怎麼看
 
-`stockcapy value` / `targets` 同時跑四個模型，並**自動排除不適用的模型**：
+`stockcapy value` / `targets` 同時跑六個模型，並**自動排除不適用的模型**：
 
 - **Graham Number** — 只在 P/E ≤ 25 且淨值為正時採計（對輕資產成長股會系統性低估）
 - **Target P/E** — 用你設定的倍數，結論等於你的假設
+- **PEG（成長調整）** — 只在預期 EPS 成長 ≥ 15% 時採計；合理倍數 = 成長率（上限 20%），讓成長股不被固定倍數壓低
+- **DCF（現金流折現）** — 10 年成長逐年淡出到 3%，以你的要求報酬率折現；金融／不動產業不適用，對假設極敏感
 - **Gordon Growth (DDM)** — 只在殖利率 ≥ 2% 時採計
 - **Analyst Consensus** — 賣方平均目標價，僅列作對照，**永不納入中位數**
 
@@ -324,7 +326,11 @@ stockcapy assume default --target-pe 20    # 改通用預設
 stockcapy value KO --target-pe 20 --required-return 0.08 --margin-of-safety 0.25
 ```
 
-只有一個模型適用時（成長股常見），輸出會明確警告「結論等同於你的假設，脆弱度高」。
+只有一個模型適用時，輸出會明確警告「結論等同於你的假設，脆弱度高」。
+
+每個合理價還會標出**不確定性等級**（低／中／高／極高）：只有單一模型、模型之間差距很大、
+或盈餘劇變時，入手價會自動用更寬的安全邊際（30%／40%／50%）。**你自己指定過安全邊際就照你的，
+不會被加寬。** 智慧提醒的合理價下方也會列出採計的模型、不確定性與實際用的安全邊際。
 
 **ETF 沒有 EPS 或淨值，四個模型全不適用。** 這時 `targets` 改用
 **200 日均線**當入手錨點，並在「依據」欄標成 `200MA`。
@@ -611,7 +617,8 @@ firstrade_csv.py   券商 CSV 解析（中文/英文版面、DRIP、內嵌預扣
 holdings.py        移動平均成本基礎、已實現損益
 market.py          yfinance 封裝（報價/基本面/股利/歷史價/年度 EPS）
 historical_pe.py   該檔自己的歷史 P/E 分布
-valuation.py       四個估值模型 + 適用性閘門
+valuation.py       六個估值模型 + 適用性閘門
+uncertainty.py     合理價的不確定性等級與浮動安全邊際
 assumptions.py     每檔假設的儲存與解析順序
 targets.py         入手價（估值模型 or 200MA）
 indicators.py      技術指標（RSI / 均線 / 布林），純函式、離線可測

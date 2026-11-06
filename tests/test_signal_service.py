@@ -26,13 +26,22 @@ NVDA_CLOSES = pd.Series([100.0] * 59 + [80.0], index=_INDEX)
 SPY_CLOSES = pd.Series([500.0] * 60, index=_INDEX)
 
 
+SIGNAL_WINDOW_DAYS = 800  # the signal lookback is ~400 days; the P/E history is ~5 years
+
+
 class FakeClient:
     def __init__(self, spy=SPY_CLOSES):
+        self.history_calls = 0
         self.quote_calls = 0
         self.close_calls: dict[str, int] = {}
         self._spy = spy
 
     def close_prices(self, symbol, start, end):
+        # The alert's valuation hint also reads a multi-year window for the historical
+        # P/E (cached for 30 days). Only the signal-sized window is what this counts.
+        if (end - start).days > SIGNAL_WINDOW_DAYS:
+            self.history_calls += 1
+            return NVDA_CLOSES
         self.close_calls[symbol] = self.close_calls.get(symbol, 0) + 1
         return self._spy if symbol == "SPY" else NVDA_CLOSES
 

@@ -63,6 +63,7 @@ from .signals import (
     SignalCondition,
     SignalThresholds,
     StaleSignalData,
+    ValuationContext,
     evaluate_signal,
     is_signal_data_stale,
     signal_data_age_days,
@@ -546,37 +547,94 @@ def _scan_symbol(
         market_context=tuning.market_context,
     )
     if signal is not None:
-        reference, buy_below, basis = _valuation_hint(settings, client, symbol, target.average_cost)
-        signal = dataclasses.replace(
-            signal, reference_price=reference, buy_below_price=buy_below, valuation_basis=basis
-        )
+        hint = _valuation_hint(settings, client, symbol, target.average_cost)
+        if hint is not None:
+            signal = dataclasses.replace(
+                signal,
+                reference_price=hint.reference_price,
+                buy_below_price=hint.buy_below,
+                valuation_basis=hint.basis,
+                valuation_context=hint.context,
+            )
     return SymbolScan(signal=signal)
+
+
+@dataclass(frozen=True)
+class ValuationHint:
+    reference_price: float
+    buy_below: float | None
+    basis: str
+    context: ValuationContext | None
+
+
+def _alert_assumptions(
+    settings: Settings, client: MarketDataClient, symbol: str
+) -> tuple[ValuationAssumptions, str]:
+    """The same resolution as the full 入手價 view (default, then the stock's own stable
+    historical P/E, then any manual override), so one symbol cannot show two fair values.
+    The historical P/E is cached for 30 days, so only the first lookup is a multi-year
+    fetch. If it fails, the alert falls back to default + override instead of being lost."""
+    from .assumptions import (
+        SOURCE_DEFAULT,
+        SOURCE_MANUAL,
+        load_global_default,
+        load_override,
+        resolve_assumptions,
+    )
+
+    with open_store(settings.database_path) as connection:
+        try:
+            entry = resolve_assumptions(connection, client, symbol)
+            return entry.assumptions, entry.source
+        except Exception:  # noqa: BLE001 - a flaky history lookup must not drop the alert
+            assumptions = load_global_default(connection)
+            override = load_override(connection, symbol)
+            if override is not None and not override.is_empty():
+                return override.apply_to(assumptions), SOURCE_MANUAL
+            return assumptions, SOURCE_DEFAULT
+
+
+def _valuation_context(target, source: str) -> ValuationContext | None:
+    """None unless the reference is model-based (a fund's trend line has no models)."""
+    assessment = target.uncertainty
+    if assessment is None:
+        return None
+    names = tuple(
+        estimate.model_name
+        for estimate in target.valuation.estimates
+        if estimate.counts_toward_aggregate
+    )
+    return ValuationContext(
+        model_names=names,
+        uncertainty_tier=assessment.tier,
+        uncertainty_reasons=assessment.reasons,
+        margin_of_safety=target.margin_of_safety,
+        target_pe=target.assumptions.target_price_earnings if "Target P/E" in names else None,
+        multiple_source=source,
+    )
 
 
 def _valuation_hint(
     settings: Settings, client: MarketDataClient, symbol: str, average_cost: float | None
-) -> tuple[float | None, float | None, str | None]:
+) -> ValuationHint | None:
     """The 入手價 view's reference fair value and buy-below price, best-effort. Any
     failure (no fundamentals, a flaky lookup) just omits the line — it never blocks the
     alert. Mechanical model output, like everywhere else: context, not advice."""
-    from .assumptions import load_global_default, load_override
     from .targets import build_entry_target
 
     try:
-        # Default + any stored per-symbol override only — NOT the 5-year historical-P/E
-        # derivation, so an alert cycle stays light (no extra multi-year fetch). The full
-        # 入手價 view may differ where it uses a symbol's historical P/E.
-        with open_store(settings.database_path) as connection:
-            assumptions = load_global_default(connection)
-            override = load_override(connection, symbol)
-        if override is not None and not override.is_empty():
-            assumptions = override.apply_to(assumptions)
+        assumptions, source = _alert_assumptions(settings, client, symbol)
         target = build_entry_target(client, symbol, assumptions, average_cost)
         if target.reference_price is None:
-            return None, None, None
-        return target.reference_price, target.buy_below, target.basis
+            return None
+        return ValuationHint(
+            reference_price=target.reference_price,
+            buy_below=target.buy_below,
+            basis=target.basis,
+            context=_valuation_context(target, source),
+        )
     except Exception:  # noqa: BLE001 - valuation is supplementary, never fatal to an alert
-        return None, None, None
+        return None
 
 
 def _signal_pricing(client: MarketDataClient, symbol: str, average_cost: float | None) -> PositionPricing:

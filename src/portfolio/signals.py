@@ -85,6 +85,7 @@ class Signal:
     reference_price: float | None = None
     buy_below_price: float | None = None
     valuation_basis: str | None = None
+    is_muted: bool = False
 
     @property
     def severity(self) -> int:

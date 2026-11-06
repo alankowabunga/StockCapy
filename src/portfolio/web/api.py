@@ -43,6 +43,7 @@ from ..signal_config import (
     resolve_thresholds,
     save_threshold_override,
 )
+from ..signal_subscriptions import InvalidSymbolError
 from ..store import open_store
 from ..targets import build_entry_targets
 from . import serializers as ser
@@ -80,6 +81,10 @@ class ThresholdRequest(BaseModel):
     short_trend_bias_percent: float | None = None
     rsi_oversold: float | None = None
     rsi_overbought: float | None = None
+
+
+class SubscriptionRequest(BaseModel):
+    enabled: bool
 
 
 class LoginRequest(BaseModel):
@@ -210,6 +215,7 @@ def _register_routes(app: FastAPI, settings: Settings, client: MarketDataClient)
         _register_signal_threshold_read_route,
         _register_signal_threshold_write_routes,
         _register_signal_history_route,
+        _register_signal_subscription_routes,
         _register_manual_position_routes,
         _register_import_route,
     ):
@@ -425,6 +431,22 @@ def _register_signal_threshold_write_routes(
         with open_store(settings.database_path) as connection:
             removed = delete_threshold_override(connection, symbol)
         return {"ok": True, "removed": removed}
+
+
+def _register_signal_subscription_routes(
+    app: FastAPI, settings: Settings, client: MarketDataClient
+) -> None:
+    @app.get("/api/signals/subscriptions")
+    def get_subscriptions() -> list[dict]:
+        return [ser.serialize_subscription(item) for item in service.load_signal_subscriptions(settings)]
+
+    @app.put("/api/signals/subscriptions/{symbol}")
+    def put_subscription(symbol: str, request: SubscriptionRequest) -> dict:
+        try:
+            result = service.set_signal_subscription(settings, symbol, request.enabled)
+        except InvalidSymbolError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        return ser.serialize_subscription(result)
 
 
 def _register_signal_history_route(

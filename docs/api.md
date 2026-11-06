@@ -85,3 +85,10 @@ Base URL 由使用者設定。除 `/api/session` 外，所有端點都需要 `Au
 即時報價正常也救不了——布林、RSI、均線全部來自收盤序列。詳見 decisions.md D21。
 
 **破壞性變更**：`GET /api/signals` 從 `Signal[]` 改為 `{signals, stale}`。網頁已同步更新；任何第三方消費端需一併調整。
+
+## 智慧提醒通知對象（2026-11-06 起，D29）
+
+- `GET /api/signals/subscriptions` → `[{symbol, sources, enabled}]`。`sources` 為 `持股` / `監控` / `手動加入`。
+- `PUT /api/signals/subscriptions/{symbol}`，body `{"enabled": true|false}` → 回傳該檔最新狀態；
+  關掉一檔只在 `手動加入` 時會讓它從清單消失（`sources: []`）。代號不合法回 400。
+- `GET /api/signals` 與 `POST /api/signals/check` 的每筆 signal 多一個 `muted`：`true` 代表照樣評估、但不推播。

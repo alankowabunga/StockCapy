@@ -88,7 +88,7 @@ docker compose up -d
    [`examples/sample_firstrade_history.csv`](examples/sample_firstrade_history.csv)（假資料）。
 2. **看入手價**：「入手價」分頁列出每檔的參考合理價、入手價、現價還差幾 %。點一列可以看是哪些估值模型算出來的、為什麼。
 3. **設提醒**：在「監控」分頁設定買進／賣出提醒價（或用 CLI `stockcapy watch auto` 依入手價一次設好所有持股）。
-   「智慧提醒」不用設定，會自動看你的持股與監控清單。
+   「智慧提醒」預設會看你所有的持股與監控清單；不想收某一檔，或想多看一檔沒持有的，到「智慧提醒」分頁的「通知對象」開關。
 4. **接上手機通知**：照[Telegram 推播](#telegram-推播)取得 bot token 和 chat id 填進 `.env`，然後：
 
    ```bash
@@ -125,6 +125,7 @@ cp .env.example .env
 | **`stockcapy watch auto`** | **用估值模型自動為每檔持倉設定入手提醒價** |
 | **`stockcapy check`** | **比對現價與提醒價，到價就發通知（桌面 / Telegram / email）** |
 | **`stockcapy signals check`** | **技術指標 + 均價規則觸發時，推播分層現況摘要與觸發依據（非投資建議）** |
+| `stockcapy signals on/off <SYM>` | 打開或關掉某一檔的智慧提醒推播；沒持有的代號用 `on` 額外加入 |
 | **`stockcapy signals backtest <SYM>`** | **用歷史資料回放規則，看觸發頻率是否合理（上線前先跑）** |
 | `stockcapy watch add/list/remove` | 手動管理監控清單與提醒價位 |
 | `stockcapy value <SYM>` | 單檔的完整估值模型明細與假設 |
@@ -364,7 +365,9 @@ stockcapy signals check                 # 看持倉+監控清單目前觸發哪�
 stockcapy signals check NVDA MSFT       # 只看指定標的
 stockcapy signals backtest NVDA --years 3   # 上線前先回測：觸發頻率 + 後續報酬
 stockcapy signals set NVDA --rsi-oversold 25   # 每檔門檻可調可存（* 改通用預設）
-stockcapy signals list                  # 看每檔實際採用的門檻與來源
+stockcapy signals off VTI               # 不推播 VTI 的智慧提醒（仍會列出）
+stockcapy signals on TSM                # 沒持有也想收：額外加入 TSM
+stockcapy signals list                  # 看每檔採用的門檻，以及哪些股票會推播
 stockcapy signals history               # 過去實際觸發並通知過的紀錄
 ```
 

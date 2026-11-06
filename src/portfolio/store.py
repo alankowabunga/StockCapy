@@ -124,6 +124,13 @@ SCHEMA_STATEMENTS = (
     """,
     "CREATE INDEX IF NOT EXISTS idx_signal_events_symbol ON signal_events(symbol)",
     """
+    CREATE TABLE IF NOT EXISTS signal_subscriptions (
+        symbol     TEXT PRIMARY KEY,
+        enabled    INTEGER NOT NULL,
+        updated_at TEXT NOT NULL
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS price_fetch_log (
         symbol      TEXT PRIMARY KEY,
         fetched_on  TEXT NOT NULL

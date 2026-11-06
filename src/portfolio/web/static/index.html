@@ -356,6 +356,14 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
       <div id="signals-body"></div>
     </div>
     <div class="panel">
+      <div class="panel-head"><h3>通知對象</h3><p class="hint">持股與監控清單預設都會推播。關掉的股票仍會列在上方，只是不推播；也可以加入沒持有的股票。</p></div>
+      <form class="inline" id="subscription-form" autocomplete="off">
+        <label class="wide">代號<input name="symbol" placeholder="TSM" required maxlength="15"></label>
+        <button class="btn primary" type="submit">加入</button>
+      </form>
+      <div id="subscriptions-body" style="margin-top:8px"></div>
+    </div>
+    <div class="panel">
       <div class="panel-head"><h3>立即檢查</h3><p class="hint">重新評估並推播新觸發（同樣條件要再走 5% 或滿 7 天才重送）。</p></div>
       <button class="btn" type="button" id="signals-check-button">立即檢查</button>
       <div id="signals-check-result" style="margin-top:8px"></div>
@@ -1394,6 +1402,7 @@ function checkResultHtml(result) {
 
 function loadSignals() {
   loadInto(byId('signals-body'), renderSignals);
+  loadInto(byId('subscriptions-body'), renderSubscriptions);
   loadInto(byId('thresholds-body'), renderThresholds);
   loadInto(byId('signal-history-body'), renderSignalHistory);
 }
@@ -1429,7 +1438,8 @@ function staleFeedHtml(stale) {
 function signalRowHtml(row) {
   var labels = (row.conditions || []).map(function (c) { return esc(c.label); }).join('、');
   return '<tr' + (row.direction === 'BUY' ? ' class="hit"' : '') + '>'
-    + '<td class="sym">' + esc(row.symbol) + '</td>'
+    + '<td class="sym">' + esc(row.symbol)
+    + (row.muted ? ' <span class="badge">不推播</span>' : '') + '</td>'
     + '<td>' + signalDirectionHtml(row.direction) + '</td>'
     + numCell(money(row.last_price))
     + numCell(String(row.severity))
@@ -1439,6 +1449,50 @@ function signalRowHtml(row) {
 
 function signalDirectionHtml(direction) {
   return direction === 'BUY' ? '<span class="badge ok">偏低</span>' : '<span class="badge danger">偏高</span>';
+}
+
+async function renderSubscriptions(element) {
+  var rows = await getJson('/signals/subscriptions');
+  if (!rows || !rows.length) {
+    element.innerHTML = emptyStateHtml('沒有任何股票會收到智慧提醒。匯入持股或在上方加入代號。');
+    return;
+  }
+  element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'
+    + '<th>代號</th><th>來源</th><th>推播</th><th></th></tr></thead><tbody>'
+    + rows.map(subscriptionRowHtml).join('') + '</tbody></table></div>';
+  element.querySelectorAll('[data-subscribe]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      setSubscription(button.getAttribute('data-subscribe'), button.getAttribute('data-enable') === '1');
+    });
+  });
+}
+
+function subscriptionRowHtml(row) {
+  var next = row.enabled ? '0' : '1';
+  return '<tr><td class="sym">' + esc(row.symbol) + '</td>'
+    + '<td class="dim">' + esc((row.sources || []).join('、')) + '</td>'
+    + '<td>' + (row.enabled ? '<span class="badge ok">開</span>' : '<span class="badge">關</span>') + '</td>'
+    + '<td><button class="btn tiny" type="button" data-subscribe="' + esc(row.symbol) + '" data-enable="' + next + '">'
+    + (row.enabled ? '關閉' : '打開') + '</button></td></tr>';
+}
+
+function setSubscription(symbol, enabled) {
+  runWrite(
+    function () { return sendJson('PUT', '/signals/subscriptions/' + encodeURIComponent(symbol), {enabled: enabled}); },
+    symbol + (enabled ? ' 會推播智慧提醒' : ' 不再推播智慧提醒'),
+    function () {
+      loadInto(byId('subscriptions-body'), renderSubscriptions);
+      loadInto(byId('signals-body'), renderSignals);
+    });
+}
+
+async function submitSubscription(event) {
+  event.preventDefault();
+  var form = event.target;
+  var symbol = form.symbol.value.trim().toUpperCase();
+  if (!symbol) return;
+  setSubscription(symbol, true);
+  form.reset();
 }
 
 async function renderThresholds(element) {
@@ -1525,7 +1579,7 @@ async function runSignalCheck() {
     output.innerHTML = '<div class="box ok-box"><strong>觸發 ' + total + ' 檔，新推播 ' + fresh + ' 檔</strong>'
       + (fresh ? (result.notified ? ' <span class="dim">通知已送出。</span>'
                                   : ' <span class="warn-text">無可用通知管道。</span>')
-               : ' <span class="dim">今天都已通知過，未重送。</span>') + '</div>';
+               : ' <span class="dim">條件沒有變化，未重送。</span>') + '</div>';
     loadInto(byId('signals-body'), renderSignals);
     loadInto(byId('signal-history-body'), renderSignalHistory);
   } catch (error) {
@@ -1821,6 +1875,7 @@ async function init() {
   byId('check-button').addEventListener('click', runCheck);
   byId('signals-check-button').addEventListener('click', runSignalCheck);
   byId('threshold-form').addEventListener('submit', submitThreshold);
+  byId('subscription-form').addEventListener('submit', submitSubscription);
   byId('manual-form').addEventListener('submit', submitManualPosition);
   byId('assumption-form').addEventListener('submit', submitAssumptionOverride);
   byId('login-form').addEventListener('submit', submitLogin);

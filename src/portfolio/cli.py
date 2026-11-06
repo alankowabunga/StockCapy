@@ -30,6 +30,7 @@ from .assumptions import (
     save_override,
 )
 from .auth import InsecureExposureError, require_secure_binding
+from .signal_subscriptions import InvalidSymbolError
 from .config import Settings, generate_api_token
 from .fx_sync import backfill_transaction_fx
 from .diagnostics import detect_missing_cost_basis
@@ -491,6 +492,30 @@ def signals_list() -> None:
         symbols = sorted({p.symbol for p in positions} | overrides)
         resolved = {s: resolve_thresholds(connection, s) for s in symbols}
     report.render_signal_thresholds(console, default, resolved)
+    report.render_signal_subscriptions(console, service.load_signal_subscriptions(settings))
+
+
+@signals_app.command("on")
+def signals_on(symbol: str) -> None:
+    """打開某一檔的智慧提醒推播；沒持有也沒在監控清單的代號會額外加入。"""
+    _set_signal_subscription(symbol, enabled=True)
+
+
+@signals_app.command("off")
+def signals_off(symbol: str) -> None:
+    """關掉某一檔的智慧提醒推播（網頁與 `signals check` 仍會列出）。"""
+    _set_signal_subscription(symbol, enabled=False)
+
+
+def _set_signal_subscription(symbol: str, enabled: bool) -> None:
+    try:
+        result = service.set_signal_subscription(_settings(), symbol, enabled)
+    except InvalidSymbolError as error:
+        console.print(f"[red]{error}[/red]")
+        raise typer.Exit(code=1) from error
+    state = "[green]會推播[/green]" if result.is_enabled else "[yellow]不推播[/yellow]"
+    origin = "、".join(result.sources) or "已不在清單"
+    console.print(f"{result.symbol}：智慧提醒{state}（來源：{origin}）")
 
 
 @signals_app.command("history")

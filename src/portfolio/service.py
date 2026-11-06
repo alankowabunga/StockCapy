@@ -36,6 +36,14 @@ from .repository import (
     save_price_history,
 )
 from .signal_config import resolve_thresholds
+from .signal_subscriptions import (
+    DefaultScope,
+    SignalSubscription,
+    load_subscription_overrides,
+    normalize_symbol,
+    resolve_subscriptions,
+    store_subscription_choice,
+)
 from .signals import (
     MarketContext,
     PositionPricing,
@@ -346,7 +354,8 @@ def scan_signals(
     """
     requested = scope or SignalScope()
     positions, _ = load_positions(settings)
-    tickers = requested.symbols or default_target_symbols(settings, positions)
+    subscriptions = _subscriptions_for(settings, positions)
+    tickers = requested.symbols or [item.symbol for item in subscriptions]
     if not tickers:
         return SignalScan(signals=[], stale=[])
     tuning_by_symbol = _resolve_tuning_for(settings, client, tickers, requested.thresholds)
@@ -354,14 +363,49 @@ def scan_signals(
         _scan_symbol(settings, client, target, tuning_by_symbol[target.symbol])
         for target in _targets_for(tickers, positions)
     ]
+    muted = _muted_symbols(settings)
+    signals = [
+        dataclasses.replace(scan.signal, is_muted=scan.signal.symbol in muted)
+        for scan in scans
+        if scan.signal is not None
+    ]
     return SignalScan(
-        signals=sorted(
-            (scan.signal for scan in scans if scan.signal is not None),
-            key=lambda signal: signal.severity,
-            reverse=True,
-        ),
+        signals=sorted(signals, key=lambda signal: signal.severity, reverse=True),
         stale=[scan.stale for scan in scans if scan.stale is not None],
     )
+
+
+def load_signal_subscriptions(settings: Settings) -> list[SignalSubscription]:
+    """Holdings + watchlist are in by default; stored rows mute or add symbols."""
+    positions, _ = load_positions(settings)
+    return _subscriptions_for(settings, positions)
+
+
+def set_signal_subscription(settings: Settings, raw_symbol: str, enabled: bool) -> SignalSubscription:
+    symbol = normalize_symbol(raw_symbol)
+    positions, _ = load_positions(settings)
+    with open_store(settings.database_path) as connection:
+        store_subscription_choice(connection, _default_signal_scope(connection, positions), symbol, enabled)
+    current = {item.symbol: item for item in _subscriptions_for(settings, positions)}
+    return current.get(symbol, SignalSubscription(symbol, (), False))
+
+
+def _subscriptions_for(settings: Settings, positions: list[Position]) -> list[SignalSubscription]:
+    with open_store(settings.database_path) as connection:
+        scope = _default_signal_scope(connection, positions)
+        overrides = load_subscription_overrides(connection)
+    return resolve_subscriptions(scope, overrides)
+
+
+def _default_signal_scope(connection, positions: list[Position]) -> DefaultScope:
+    watched = frozenset(rule.symbol for rule in load_alert_rules(connection))
+    return DefaultScope(held=frozenset(p.symbol for p in positions), watched=watched)
+
+
+def _muted_symbols(settings: Settings) -> set[str]:
+    with open_store(settings.database_path) as connection:
+        overrides = load_subscription_overrides(connection)
+    return {symbol for symbol, enabled in overrides.items() if not enabled}
 
 
 def evaluate_signals(
@@ -565,12 +609,12 @@ def _should_suppress_until_tomorrow(
 
 
 def _notifiable_signals(settings: Settings, signals: list[Signal]) -> list[Signal]:
-    """When PORTFOLIO_MUTE_MARKET_WIDE is set, signals the benchmark explains (a broad
-    sell-off/rally) still appear in the returned list but are not notified, so a market
-    dragging every holding down does not fire an alert on each one."""
+    """Muted symbols, and with PORTFOLIO_MUTE_MARKET_WIDE the signals a broad market move
+    explains, still appear in the returned list but are not pushed."""
+    audible = [signal for signal in signals if not signal.is_muted]
     if not settings.mute_market_wide_signals:
-        return signals
-    return [signal for signal in signals if not signal.likely_market_wide]
+        return audible
+    return [signal for signal in audible if not signal.likely_market_wide]
 
 
 def _select_signals_to_notify(

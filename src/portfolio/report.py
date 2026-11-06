@@ -560,7 +560,7 @@ def _signal_table(signals: list) -> Table:
         table.add_column(column, justify="right" if column not in {"代號", "條件"} else "left")
     for signal in signals:
         table.add_row(
-            signal.symbol,
+            f"{signal.symbol} [yellow](不推播)[/yellow]" if signal.is_muted else signal.symbol,
             _DIRECTION_LABEL.get(signal.direction, signal.direction),
             f"{signal.last_price:,.2f}",
             str(signal.severity),
@@ -675,6 +675,20 @@ def _prettify_conditions(conditions: str) -> str:
         except KeyError:
             labels.append(code)
     return "、".join(labels)
+
+
+def render_signal_subscriptions(console: Console, subscriptions: list) -> None:
+    if not subscriptions:
+        console.print("[dim]沒有任何股票會收到智慧提醒。用 `signals on <SYM>` 加入。[/dim]")
+        return
+    table = Table(title="智慧提醒通知對象", header_style="bold cyan")
+    for column in ("代號", "來源", "推播"):
+        table.add_column(column)
+    for item in subscriptions:
+        state = "[green]開[/green]" if item.is_enabled else "[yellow]關[/yellow]"
+        table.add_row(item.symbol, "、".join(item.sources), state)
+    console.print(table)
+    console.print("[dim]`signals off <SYM>` 關掉一檔、`signals on <SYM>` 打開或加入一檔。[/dim]")
 
 
 def render_signal_thresholds(console: Console, default, resolved: dict) -> None:

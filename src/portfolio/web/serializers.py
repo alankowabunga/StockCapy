@@ -272,6 +272,15 @@ def serialize_signal(signal: Signal) -> dict:
         **_serialize_indicators(signal.snapshot),
         **_serialize_market_context(signal),
         "summary": narrate_signal(signal),
+        "muted": signal.is_muted,
+    }
+
+
+def serialize_subscription(subscription) -> dict:
+    return {
+        "symbol": subscription.symbol,
+        "sources": list(subscription.sources),
+        "enabled": subscription.is_enabled,
     }
 
 

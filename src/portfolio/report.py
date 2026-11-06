@@ -6,7 +6,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from .currency import currency_symbol
+from .currency import currency_symbol, format_money
+from .markets import currency_for_symbol
 from .entry_verdict import (
     TIER_ABOVE_VALUE,
     TIER_AT_MARGIN,
@@ -148,7 +149,8 @@ def render_risk_metrics(console: Console, metrics: RiskMetrics | None) -> None:
 def render_valuation(
     console: Console, report: ValuationReport, assumptions: ValuationAssumptions
 ) -> None:
-    table = Table(title=f"{report.symbol} 估值模型（現價 ${report.last_price:,.2f}）",
+    currency = currency_for_symbol(report.symbol)
+    table = Table(title=f"{report.symbol} 估值模型（現價 {format_money(report.last_price, currency)}）",
                   header_style="bold cyan")
     table.add_column("模型")
     table.add_column("估值", justify="right")
@@ -157,12 +159,12 @@ def render_valuation(
     for estimate in report.estimates:
         table.add_row(
             estimate.model_name,
-            f"${estimate.fair_value:,.2f}" if estimate.has_value else "n/a",
+            format_money(estimate.fair_value, currency) if estimate.has_value else "n/a",
             _applicability_label(estimate),
             estimate.note,
         )
     console.print(table)
-    console.print(_valuation_verdict(report, assumptions))
+    console.print(_valuation_verdict(report, assumptions, currency))
 
 
 def _applicability_label(estimate) -> str:
@@ -173,7 +175,9 @@ def _applicability_label(estimate) -> str:
     return "[green]✓[/green]" if estimate.is_applicable else "[dim]不適用[/dim]"
 
 
-def _valuation_verdict(report: ValuationReport, assumptions: ValuationAssumptions) -> Panel:
+def _valuation_verdict(
+    report: ValuationReport, assumptions: ValuationAssumptions, currency: str = "USD"
+) -> Panel:
     midpoint = report.median_fair_value
     if midpoint is None:
         return Panel(
@@ -183,9 +187,9 @@ def _valuation_verdict(report: ValuationReport, assumptions: ValuationAssumption
     model_count = len(report.aggregated_values)
     buy_below = report.buy_below_price(assumptions)
     lines = [
-        f"採計模型中位數    ${midpoint:,.2f}（{model_count} 個模型）",
+        f"採計模型中位數    {format_money(midpoint, currency)}（{model_count} 個模型）",
         f"相對現價          {_colored_percent(report.upside_percent() or 0)}",
-        f"扣 {assumptions.margin_of_safety:.0%} 安全邊際後  ${buy_below:,.2f}",
+        f"扣 {assumptions.margin_of_safety:.0%} 安全邊際後  {format_money(buy_below, currency)}",
     ]
     if model_count == 1:
         lines.append("[yellow]只有單一模型適用，結論等同於你的假設，脆弱度高。[/yellow]")
@@ -203,11 +207,12 @@ def render_dividend_receipts(
     for column in ("代號", "股利總額", "預扣稅", "實收淨額", "實際稅率"):
         table.add_column(column, justify="right" if column != "代號" else "left")
     for receipt in receipts.values():
+        currency = currency_for_symbol(receipt.symbol)
         table.add_row(
             receipt.symbol,
-            f"${receipt.gross_amount:,.2f}",
-            f"[red]-${receipt.withheld_amount:,.2f}[/red]",
-            f"[green]${receipt.net_amount:,.2f}[/green]",
+            format_money(receipt.gross_amount, currency),
+            f"[red]-{format_money(receipt.withheld_amount, currency)}[/red]",
+            f"[green]{format_money(receipt.net_amount, currency)}[/green]",
             f"{receipt.effective_withholding_percent:.1f}%",
         )
     _add_receipt_total_row(table, receipts)
@@ -237,12 +242,13 @@ def render_dividend_forecast(
     for column in ("代號", "股數", "每股年配息", "年化總額", "稅後預估"):
         table.add_column(column, justify="right" if column != "代號" else "left")
     for forecast in forecasts:
+        currency = currency_for_symbol(forecast.symbol)
         table.add_row(
             forecast.symbol,
             f"{forecast.quantity:,.2f}",
-            f"${forecast.annual_rate_per_share:,.2f}",
-            f"${forecast.gross_annual_income:,.2f}",
-            f"[green]${forecast.net_annual_income:,.2f}[/green]",
+            format_money(forecast.annual_rate_per_share, currency),
+            format_money(forecast.gross_annual_income, currency),
+            f"[green]{format_money(forecast.net_annual_income, currency)}[/green]",
         )
     _add_forecast_total_row(table, forecasts)
     console.print(table)
@@ -268,8 +274,8 @@ def _format_gap(gap_percent: float | None) -> str:
     return f"[{color}]還差 {gap_percent:.1f}%[/{color}]"
 
 
-def _format_optional_price(value: float | None) -> str:
-    return f"${value:,.2f}" if value else "[dim]—[/dim]"
+def _format_optional_price(value: float | None, currency: str = "USD") -> str:
+    return format_money(value, currency) if value else "[dim]—[/dim]"
 
 
 def render_entry_targets(console: Console, targets: list, provenance: dict | None = None) -> None:
@@ -329,13 +335,14 @@ def _render_entry_price_table(console: Console, targets: list) -> None:
     for column in ("代號", "現價", "我的均價", "vs 均價", "參考價", "入手價", "距離", "依據"):
         table.add_column(column, justify="right" if column != "代號" else "left")
     for target in targets:
+        currency = currency_for_symbol(target.symbol)
         table.add_row(
             target.symbol,
             f"{target.last_price:,.2f}",
-            _format_optional_price(target.average_cost),
+            _format_optional_price(target.average_cost, currency),
             _format_signed_percent(target.discount_to_average_cost_percent),
-            _format_optional_price(target.reference_price),
-            _format_optional_price(target.buy_below),
+            _format_optional_price(target.reference_price, currency),
+            _format_optional_price(target.buy_below, currency),
             _format_gap(target.gap_to_buy_below_percent),
             _basis_label(target),
         )

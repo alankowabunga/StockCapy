@@ -402,9 +402,10 @@ def _persist_auto_targets(targets: list) -> None:
                 if target.model_count
                 else f"依據 {target.basis}"
             )
+            currency = currency_for_symbol(target.symbol)
             console.print(
-                f"[green]{target.symbol}[/green] 入手價 ${target.buy_below:,.2f}"
-                f"（{basis}，現價 ${target.last_price:,.2f}）"
+                f"[green]{target.symbol}[/green] 入手價 {format_money(target.buy_below, currency)}"
+                f"（{basis}，現價 {format_money(target.last_price, currency)}）"
             )
     if skipped:
         console.print(f"[yellow]無適用模型、已略過：{'、'.join(skipped)}[/yellow]")

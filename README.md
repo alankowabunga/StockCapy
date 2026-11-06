@@ -1,4 +1,8 @@
-# StockCapy 🐹
+<p align="center">
+  <img src="assets/capy-logo.png" alt="StockCapy" width="160">
+</p>
+
+<h1 align="center">StockCapy</h1>
 
 > A self-hosted US-stock tool: fair-value estimates, buy-below prices, rule-based price alerts
 > pushed to Telegram/email, and TWD (NT$) return attribution. Docs are in Traditional Chinese.

@@ -68,6 +68,7 @@ def main(output_dir: Path = PWA_ICONS) -> None:
         "icon-maskable-512.png": _maskable(source, 512),
         "apple-touch-icon.png": _opaque(source, 180),
         "favicon-48.png": source.crop(FACE).resize((48, 48), Image.LANCZOS),
+        "capy-mark.png": source.crop(FACE).resize((96, 96), Image.LANCZOS),  # header logo in index.html
     }
     for name, image in written.items():
         image.save(output_dir / name)

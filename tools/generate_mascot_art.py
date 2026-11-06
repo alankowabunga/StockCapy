@@ -34,6 +34,7 @@ BANNER_CROPS = {
 STICKERS = ("party", "thumbsup", "bull", "winner")
 STICKER_WEB_WIDTH = 360  # shown at ~180px; 2x for high-density screens
 STICKER_DOC_WIDTH = 640
+AVATAR_STICKER = "thumbsup"  # the cleanest face, which survives the circular crop of chat avatars
 
 
 def _background_mask(image: Image.Image, tolerance: int = 14) -> np.ndarray:
@@ -107,17 +108,6 @@ def build_flat(output_assets: Path = ASSETS, output_static: Path = STATIC) -> No
         output_static / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)]
     )
     print(f"wrote {output_static / 'favicon.ico'}")
-    # Chat apps crop avatars to a circle and dislike transparency: put the head on brand blue.
-    size = 640
-    avatar = Image.new("RGBA", (size, size))
-    draw = ImageDraw.Draw(avatar)
-    for row in range(size):
-        t = row / (size - 1)
-        colour = tuple(round(a + (b - a) * t) for a, b in zip((74, 163, 242), (20, 98, 180)))
-        draw.line([(0, row), (size, row)], fill=colour + (255,))
-    inner = int(size * 0.8)
-    avatar.alpha_composite(head.resize((inner, inner), Image.LANCZOS), ((size - inner) // 2,) * 2)
-    _save(avatar.convert("RGB"), output_assets / "capy-avatar.png")
 
 
 def build_banner(output_assets: Path = ASSETS) -> None:
@@ -141,6 +131,22 @@ def build_web_art(output_dir: Path = ART) -> None:
         _save(_rounded(piece), output_dir / f"{name}.webp", quality=86, method=6)
 
 
+def build_avatar(sticker: Image.Image, output_assets: Path = ASSETS) -> None:
+    """Chat apps crop avatars to a circle and dislike transparency: put the sticker on brand blue."""
+    size = 640
+    avatar = Image.new("RGBA", (size, size))
+    draw = ImageDraw.Draw(avatar)
+    for row in range(size):
+        t = row / (size - 1)
+        colour = tuple(round(a + (b - a) * t) for a, b in zip((74, 163, 242), (20, 98, 180)))
+        draw.line([(0, row), (size, row)], fill=colour + (255,))
+    inner = int(size * 0.84)
+    sticker = sticker.copy()
+    sticker.thumbnail((inner, inner), Image.LANCZOS)
+    avatar.alpha_composite(sticker, ((size - sticker.width) // 2, (size - sticker.height) // 2))
+    _save(avatar.convert("RGB"), output_assets / "capy-avatar.png")
+
+
 def build_stickers(output_assets: Path = ASSETS, output_dir: Path = ART) -> None:
     for name in STICKERS:
         sticker = cutout(Image.open(ASSETS / f"mascot-{name}-source.jpg"))
@@ -150,6 +156,8 @@ def build_stickers(output_assets: Path = ASSETS, output_dir: Path = ART) -> None
             (STICKER_DOC_WIDTH, output_assets / "stickers" / f"{name}.png", {"optimize": True}),
         ):
             _save(sticker.resize((width, round(sticker.height * width / sticker.width)), Image.LANCZOS), path, **options)
+        if name == AVATAR_STICKER:
+            build_avatar(sticker, output_assets)
 
 
 def main() -> None:

@@ -13,23 +13,31 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%20role%3D%22img%22%20aria-label%3D%22StockCapy%22%3E%20%3C%21--%20Favicon%20variant%3A%20no%20orange%2C%20so%20the%20silhouette%20survives%2016px.%20--%3E%20%3Crect%20x%3D%229%22%20y%3D%2211%22%20width%3D%2212%22%20height%3D%2210%22%20rx%3D%225%22%20fill%3D%22%238a6244%22%2F%3E%20%3Crect%20x%3D%2243%22%20y%3D%2211%22%20width%3D%2212%22%20height%3D%2210%22%20rx%3D%225%22%20fill%3D%22%238a6244%22%2F%3E%20%3Crect%20x%3D%225%22%20y%3D%2215%22%20width%3D%2254%22%20height%3D%2240%22%20rx%3D%2213%22%20fill%3D%22%23a97b52%22%2F%3E%20%3Crect%20x%3D%2217%22%20y%3D%2233%22%20width%3D%2230%22%20height%3D%2222%22%20rx%3D%2211%22%20fill%3D%22%238a6244%22%2F%3E%20%3Ccircle%20cx%3D%2219%22%20cy%3D%2226%22%20r%3D%224.2%22%20fill%3D%22%232b1d12%22%2F%3E%20%3Ccircle%20cx%3D%2245%22%20cy%3D%2226%22%20r%3D%224.2%22%20fill%3D%22%232b1d12%22%2F%3E%20%3Ccircle%20cx%3D%2228.5%22%20cy%3D%2244%22%20r%3D%222.7%22%20fill%3D%22%232b1d12%22%2F%3E%20%3Ccircle%20cx%3D%2235.5%22%20cy%3D%2244%22%20r%3D%222.7%22%20fill%3D%22%232b1d12%22%2F%3E%20%3C%2Fsvg%3E">
 <style>
 :root{
-  --bg:#f4f6f8; --panel:#ffffff; --panel-alt:#f9fafb; --border:#d7dde5;
-  --text:#151a21; --dim:#5f6b7a; --accent:#1462b4; --accent-soft:#e7f0fa;
-  --up:#0d7b3e; --down:#c22f2f; --near:#9a6b00;
-  --warn-bg:#fff7e0; --warn-border:#d9a400; --warn-text:#6a5100;
-  --err-bg:#fdecec; --err-border:#c22f2f; --err-text:#8d1f1f;
-  --hit-bg:#e9f7ed; --hit-border:#0d7b3e;
-  --chip:#eceff3; --shadow:0 1px 2px rgba(16,24,40,.06);
+  --bg:#F5F1EA; --panel:#FFFFFF; --panel-alt:#FBF8F3; --border:#E6DFD3;
+  --text:#231C15; --dim:#6B5F52; --accent:#8A5A2B; --accent-soft:#F3E8DA; --accent-strong:#6E4519;
+  --on-accent:#FFFFFF;
+  --up:#1D7A4B; --down:#B83227; --near:#9A6B00;
+  --red:#B83227; --green:#1D7A4B;
+  --ok-bg:#E3F1E8; --ok-text:#175C39;
+  --info-bg:#E3EDF3; --info-text:#1F5670;
+  --warn-bg:#FFF3D6; --warn-border:#D9A400; --warn-text:#6B4E00;
+  --err-bg:#FDECE9; --err-border:#C22F2F; --err-text:#8F2A20;
+  --hit-bg:#F3E8DA; --hit-border:#8A5A2B;
+  --chip:#ECE7DF; --shadow:0 1px 2px rgba(35,28,21,.06);
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#11151a; --panel:#181d24; --panel-alt:#1f252d; --border:#2c343e;
-    --text:#e6eaef; --dim:#94a1b1; --accent:#5aa2ef; --accent-soft:#1b2a3c;
-    --up:#4cc47c; --down:#ef6b6b; --near:#e0b44c;
-    --warn-bg:#3a2f12; --warn-border:#a8831f; --warn-text:#f0dca6;
-    --err-bg:#3a1c1c; --err-border:#b04444; --err-text:#f5c6c6;
-    --hit-bg:#14301f; --hit-border:#3f9c63;
-    --chip:#242c35; --shadow:none;
+    --bg:#17130F; --panel:#201B16; --panel-alt:#28221C; --border:#3A322A;
+    --text:#EDE6DC; --dim:#A89C8D; --accent:#D9A56D; --accent-soft:#3A2C1D; --accent-strong:#E8C08F;
+    --on-accent:#1B130B;
+    --up:#5CC48C; --down:#EF7B6F; --near:#E0B44C;
+    --red:#EF7B6F; --green:#5CC48C;
+    --ok-bg:#17301F; --ok-text:#6FD19C;
+    --info-bg:#1C2D38; --info-text:#8CC4E0;
+    --warn-bg:#3A2F12; --warn-border:#A8831F; --warn-text:#F0DCA6;
+    --err-bg:#3A1C1C; --err-border:#B04444; --err-text:#F5C6C6;
+    --hit-bg:#3A2C1D; --hit-border:#D9A56D;
+    --chip:#2E2720; --shadow:none;
   }
 }
 *{box-sizing:border-box}
@@ -42,7 +50,7 @@ body{
 .num,table,input,.mono{font-variant-numeric:tabular-nums}
 a{color:var(--accent)}
 h1,h2,h3,h4{margin:0;font-weight:650}
-h2{font-size:16px}
+h2{font-size:17px}
 h3{font-size:14px}
 h4{font-size:13px}
 .dim{color:var(--dim)}
@@ -74,8 +82,8 @@ main{padding:12px; max-width:1180px; margin:0 auto}
 .warn-mark{color:var(--near); font-weight:600}
 .notice{border:1px solid var(--near); border-radius:6px; padding:8px 10px; margin:10px 0; font-size:12px}
 .panel{
-  background:var(--panel); border:1px solid var(--border); border-radius:8px;
-  padding:10px 12px; margin-bottom:12px; box-shadow:var(--shadow);
+  background:var(--panel); border:1px solid var(--border); border-radius:14px;
+  padding:14px 16px; margin-bottom:14px; box-shadow:var(--shadow);
 }
 .panel-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:8px}
 .hint{margin:0; font-size:12px; color:var(--dim)}
@@ -84,11 +92,11 @@ footer{padding:4px 12px 20px; max-width:1180px; margin:0 auto; color:var(--dim);
 
 /* controls */
 .btn{
-  font:inherit; font-size:13px; padding:5px 10px; border-radius:6px; cursor:pointer;
+  font:inherit; font-size:13px; padding:6px 12px; border-radius:8px; cursor:pointer;
   border:1px solid var(--border); background:var(--panel-alt); color:var(--text);
 }
 .btn:hover{border-color:var(--accent)}
-.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--on-accent); font-weight:650}
 .btn.tiny{padding:2px 7px; font-size:12px}
 .btn.danger{color:var(--down)}
 .btn:disabled{opacity:.55; cursor:progress}
@@ -126,14 +134,15 @@ td.sym{font-weight:650}
   display:inline-block; padding:1px 6px; border-radius:10px; font-size:11px;
   background:var(--chip); color:var(--dim); white-space:nowrap;
 }
-.badge.ok{background:var(--hit-bg); color:var(--up); font-weight:650}
+.badge.ok{background:var(--ok-bg); color:var(--ok-text); font-weight:650}
+.badge.hit{background:var(--accent); color:var(--on-accent); font-weight:700}
 .badge.warn{background:var(--warn-bg); color:var(--warn-text); font-weight:650}
 .badge.danger{background:var(--err-bg); color:var(--down); font-weight:650}
-.badge.info{background:var(--accent-soft); color:var(--accent)}
+.badge.info{background:var(--info-bg); color:var(--info-text)}
 .box{border:1px solid var(--border); border-radius:7px; padding:9px 11px; margin-bottom:8px; font-size:13px}
 .box.warn{background:var(--warn-bg); border-color:var(--warn-border); color:var(--warn-text)}
 .box.error{background:var(--err-bg); border-color:var(--err-border); color:var(--err-text)}
-.box.ok-box{background:var(--hit-bg); border-color:var(--hit-border)}
+.box.ok-box{background:var(--ok-bg); border-color:var(--green)}
 /* 分段切換（美股／台股）與可點選的券商徽章 */
 .seg{display:inline-flex; background:var(--chip); border-radius:9px; padding:3px; gap:2px}
 .seg button{
@@ -147,7 +156,7 @@ td.sym{font-weight:650}
   padding:5px 13px; border-radius:999px; cursor:pointer;
 }
 .pick:hover{border-color:var(--accent)}
-.pick[aria-checked="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent); font-weight:650}
+.pick[aria-checked="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-strong); font-weight:650}
 .pick[aria-checked="true"]::before{content:"✓ "}
 .seg button:focus-visible,.pick:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
 .inline-field{display:inline-flex; gap:6px; align-items:center; font-size:13px; margin-bottom:4px}
@@ -225,6 +234,21 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
   border:2px dashed var(--border); border-radius:8px; padding:18px 12px; text-align:center;
   cursor:pointer; color:var(--dim); font-size:13px; background:var(--panel-alt);
 }
+/* 漲跌色依市場：台股紅漲綠跌、美股綠漲紅跌；跨市場合計跟本國貨幣（見 marketOf）。 */
+.pos-tw,.neg-us{color:var(--red)}
+.neg-tw,.pos-us{color:var(--green)}
+.trend{font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* 市場徽章與距離條 */
+.mk{display:inline-block; font-size:11px; font-weight:700; padding:1px 6px; border-radius:6px; margin-left:6px; vertical-align:1px}
+.mk.us{background:var(--accent-soft); color:var(--accent-strong)}
+.mk.tw{background:var(--info-bg); color:var(--info-text)}
+.gapbar{display:inline-flex; align-items:center; gap:8px; min-width:150px}
+.gaptrack{flex:1; height:7px; border-radius:999px; background:var(--chip); overflow:hidden; min-width:56px}
+.gapfill{display:block; height:100%; background:var(--accent); opacity:.5}
+.gapfill.hit{opacity:1}
+.gaplabel{font-size:12px; color:var(--dim); white-space:nowrap}
+.gaplabel.hit{color:var(--accent-strong); font-weight:700}
 .drop.drag{border-color:var(--accent); background:var(--accent-soft); color:var(--text)}
 .spark{width:100%; height:64px; display:block}
 .spark path{fill:none; stroke:var(--accent); stroke-width:1.6; vector-effect:non-scaling-stroke}
@@ -297,7 +321,7 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
     <div class="panel">
       <div class="panel-head">
         <h2>入手價對照</h2>
-        <p class="hint">點一列展開估值模型明細與價格位置。已到價的列以綠色標示。</p>
+        <p class="hint">點一列展開估值模型明細與價格位置。已到價的列以棕色標示。</p>
       </div>
       <div id="targets-body"></div>
     </div>
@@ -495,7 +519,7 @@ function homeAmount(value) {
 function signedHomeAmount(value) {
   if (!isNumber(value)) return '<span class="dim">' + DASH + '</span>';
   var text = (value >= 0 ? '+' : '-') + homeMark + decimals(Math.abs(value), 0, 0);
-  return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
+  return trendHtml(text, value);
 }
 
 function shares(value) {
@@ -510,18 +534,57 @@ function ratio(value, digits) {
   return isNumber(value) ? Number(value).toFixed(digits == null ? 2 : digits) : DASH;
 }
 
+/* 跨市場的合計沒有單一市場，跟本國貨幣：台幣＝台灣慣例。載入投資組合後由 setAggregateMarket 更新。 */
+var aggregateMarket = 'tw';
+
+function setAggregateMarket(homeCurrency) {
+  aggregateMarket = String(homeCurrency || 'TWD').toUpperCase() === 'TWD' ? 'tw' : 'us';
+}
+
+/** hint 可以是代號、幣別代碼（TWD／USD）或省略（＝跨市場合計）。 */
+function marketOf(hint) {
+  if (hint == null || hint === '') return aggregateMarket;
+  if (hint === 'TWD') return 'tw';
+  if (hint === 'USD') return 'us';
+  return currencyForSymbol(hint) === 'TWD' ? 'tw' : 'us';
+}
+
+/** 顏色之外一律帶 ▲▼，色弱與台美相反的慣例都不會讀錯方向。 */
+function trendHtml(text, value, hint) {
+  if (value === 0) return '<span class="trend dim">' + text + '</span>';
+  var direction = value > 0 ? 'pos' : 'neg';
+  return '<span class="trend ' + direction + '-' + marketOf(hint) + '">'
+    + (value > 0 ? '▲ ' : '▼ ') + text + '</span>';
+}
+
 /** 損益與百分比一律帶正負號與顏色，null 走灰色破折號而不是 NaN。 */
-function signedPercent(value, digits) {
+function signedPercent(value, digits, hint) {
   if (!isNumber(value)) return '<span class="dim">' + DASH + '</span>';
   var text = (value >= 0 ? '+' : '') + Number(value).toFixed(digits == null ? 2 : digits) + '%';
-  return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
+  return trendHtml(text, Number(value), hint);
 }
 
 function signedMoney(value, currency) {
   if (!isNumber(value)) return '<span class="dim">' + DASH + '</span>';
   var mark = CURRENCY_MARKS[currency || 'USD'] || '$';
   var text = (value >= 0 ? '+' : '-') + mark + decimals(Math.abs(value), 2, 2);
-  return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
+  return trendHtml(text, value, currency);
+}
+
+function noteHomeCurrency(portfolio) {
+  var home = portfolio && portfolio.home_currency_summary;
+  if (home && home.home_currency) setAggregateMarket(home.home_currency);
+}
+
+function marketBadgeHtml(symbol) {
+  return currencyForSymbol(symbol) === 'TWD'
+    ? '<span class="mk tw" title="台股，以台幣計價">台</span>'
+    : '<span class="mk us" title="美股，以美元計價">美</span>';
+}
+
+/** 代號後面帶市場徽章：台美同表時一眼可辨，不只靠 NT$ 與 $。 */
+function symHtml(symbol) {
+  return esc(symbol) + marketBadgeHtml(symbol);
 }
 
 function numberOrNull(raw) {
@@ -665,11 +728,11 @@ function isTargetReached(target) {
 function targetMainRowHtml(target, index) {
   var reached = isTargetReached(target);
   return '<tr class="row-main' + (reached ? ' hit' : '') + '" data-toggle="' + index + '" tabindex="0">'
-    + '<td class="sym"><span class="caret">&#9656;</span> ' + esc(target.symbol)
-    + (reached ? ' <span class="badge ok">已到價</span>' : '') + '</td>'
+    + '<td class="sym"><span class="caret">&#9656;</span> ' + symHtml(target.symbol)
+    + (reached ? ' <span class="badge hit">已到價</span>' : '') + '</td>'
     + numCell(moneyFor(target.last_price, target.symbol))
     + numCell(moneyFor(target.average_cost, target.symbol), 'opt')
-    + numCell(signedPercent(target.discount_to_average_cost_percent, 1), 'opt')
+    + numCell(signedPercent(target.discount_to_average_cost_percent, 1, target.symbol), 'opt')
     + numCell(moneyFor(target.reference_price, target.symbol))
     + numCell(moneyFor(target.buy_below, target.symbol))
     + numCell(gapHtml(target.gap_to_buy_below_percent))
@@ -678,8 +741,13 @@ function targetMainRowHtml(target, index) {
 
 function gapHtml(gap) {
   if (!isNumber(gap)) return '<span class="dim">' + DASH + '</span>';
-  if (gap <= 0) return '<span class="up">已到價 ' + gap.toFixed(1) + '%</span>';
-  return '<span class="' + (gap <= 15 ? 'near' : 'dim') + '">還差 ' + gap.toFixed(1) + '%</span>';
+  var reached = gap <= 0;
+  /* 越滿＝越接近入手價；差 0% 以內整條填滿並改品牌色。 */
+  var fill = reached ? 100 : Math.max(6, Math.min(100, 100 - gap * 4.5));
+  var label = reached ? '已到價 ' + gap.toFixed(1) + '%' : '還差 ' + gap.toFixed(1) + '%';
+  return '<span class="gapbar"><span class="gaptrack"><span class="gapfill' + (reached ? ' hit' : '')
+    + '" style="width:' + fill.toFixed(0) + '%"></span></span><span class="gaplabel'
+    + (reached ? ' hit' : '') + '">' + label + '</span></span>';
 }
 
 function basisHtml(target) {
@@ -745,7 +813,7 @@ function peOptionRowHtml(candidate, currency) {
     + numCell(decimals(candidate.target_pe, 1, 1))
     + numCell(money(candidate.fair_value, currency))
     + numCell(money(candidate.buy_below, currency))
-    + numCell(signedPercent(candidate.upside_percent, 0))
+    + numCell(signedPercent(candidate.upside_percent, 0, currency))
     + '<td>' + tierHtml(candidate) + hintHtml(candidate) + '</td></tr>';
 }
 
@@ -937,7 +1005,7 @@ function pricePositionHtml(target) {
     + '<dt>52 週低</dt><dd>' + moneyFor(target.week52_low, target.symbol) + '</dd>'
     + '<dt>52 週高</dt><dd>' + moneyFor(target.week52_high, target.symbol) + '</dd>'
     + '<dt>區間位置</dt><dd>' + plainPercent(target.range_percentile, 0) + '</dd>'
-    + '<dt>vs 200 日均線</dt><dd>' + signedPercent(target.premium_to_two_hundred_day_percent, 2) + '</dd>'
+    + '<dt>vs 200 日均線</dt><dd>' + signedPercent(target.premium_to_two_hundred_day_percent, 2, target.symbol) + '</dd>'
     + '</dl>' + rangeBarHtml(target);
 }
 
@@ -983,6 +1051,7 @@ function loadPositions() {
 
 async function renderPortfolio(element) {
   var portfolio = await getJson('/portfolio');
+  noteHomeCurrency(portfolio);
   var positions = portfolio.positions || [];
   element.innerHTML = summaryCardsHtml(portfolio.summary || {})
     + (positions.length ? positionsTableHtml(positions) : emptyStateHtml('目前沒有持倉。'))
@@ -1100,7 +1169,7 @@ function homeCurrencyTableHtml(code, positions) {
   var rated = positions.filter(function (p) { return p.average_cost_rate != null; });
   if (!rated.length) return '';
   var rows = rated.map(function (p) {
-    return '<tr><td class="sym">' + esc(p.symbol) + '</td>'
+    return '<tr><td class="sym">' + symHtml(p.symbol) + '</td>'
       + '<td class="num">' + fxRate(p.average_cost_rate) + '</td>'
       + '<td class="num">' + homeAmount(p.cost_basis_home) + '</td>'
       + '<td class="num">' + signedHomeAmount(p.stock_gain_home) + '</td>'
@@ -1169,13 +1238,13 @@ function unpricedMark(position) {
 }
 
 function positionRowHtml(position) {
-  return '<tr><td class="sym">' + esc(position.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(position.symbol) + '</td>'
     + numCell(shares(position.quantity) + unpricedMark(position))
     + numCell(moneyFor(position.average_cost, position.symbol) + unpricedMark(position), 'opt')
     + numCell(moneyFor(position.last_price, position.symbol))
     + numCell(moneyFor(position.market_value, position.symbol))
     + numCell(signedMoney(position.unrealized_gain, currencyForSymbol(position.symbol)))
-    + numCell(signedPercent(position.unrealized_return_percent, 2))
+    + numCell(signedPercent(position.unrealized_return_percent, 2, position.symbol))
     + numCell(plainPercent(position.weight_percent, 1), 'opt')
     + '<td class="opt dim">' + esc(position.sector || DASH) + '</td></tr>';
 }
@@ -1292,7 +1361,7 @@ async function renderRisk(element) {
   }
   element.innerHTML = '<div class="cards">'
     + cardHtml('年化波動度', plainPercent(metrics.annualized_volatility_percent, 1))
-    + cardHtml('最大回撤', '<span class="down">' + plainPercent(metrics.max_drawdown_percent, 1) + '</span>')
+    + cardHtml('最大回撤', '<span class="neg-' + marketOf() + '">▼ ' + plainPercent(metrics.max_drawdown_percent, 1) + '</span>')
     + cardHtml('Sharpe Ratio', ratio(metrics.sharpe_ratio, 2))
     + cardHtml('與 SPY 相關性', ratio(metrics.benchmark_correlation, 2))
     + cardHtml('觀察交易日', isNumber(metrics.observation_days) ? metrics.observation_days + ' 天' : DASH)
@@ -1327,10 +1396,10 @@ function receiptsTableHtml(receipts) {
 }
 
 function receiptRowHtml(receipt) {
-  return '<tr><td class="sym">' + esc(receipt.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(receipt.symbol) + '</td>'
     + numCell(moneyFor(receipt.gross_amount, receipt.symbol))
-    + numCell('<span class="down">-' + moneyFor(receipt.withheld_amount, receipt.symbol) + '</span>')
-    + numCell('<span class="up">' + moneyFor(receipt.net_amount, receipt.symbol) + '</span>')
+    + numCell('<span class="dim">-' + moneyFor(receipt.withheld_amount, receipt.symbol) + '</span>')
+    + numCell('<span>' + moneyFor(receipt.net_amount, receipt.symbol) + '</span>')
     + numCell(plainPercent(receipt.effective_withholding_percent, 1), 'opt') + '</tr>';
 }
 
@@ -1358,8 +1427,8 @@ function receiptsTotalRowHtml(receipts) {
     var c = group.currency;
     return '<tr class="total"><td>' + totalLabel(c, groups.length) + '</td>'
       + numCell(money(gross, c))
-      + numCell('<span class="down">-' + money(withheld, c) + '</span>')
-      + numCell('<span class="up">' + money(sumBy(group.rows, 'net_amount'), c) + '</span>')
+      + numCell('<span class="dim">-' + money(withheld, c) + '</span>')
+      + numCell('<span>' + money(sumBy(group.rows, 'net_amount'), c) + '</span>')
       + numCell(plainPercent(gross ? withheld / gross * 100 : null, 1), 'opt') + '</tr>';
   }).join('');
 }
@@ -1374,11 +1443,11 @@ function forecastsTableHtml(forecasts) {
 }
 
 function forecastRowHtml(forecast) {
-  return '<tr><td class="sym">' + esc(forecast.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(forecast.symbol) + '</td>'
     + numCell(shares(forecast.quantity), 'opt')
     + numCell(moneyFor(forecast.annual_rate_per_share, forecast.symbol), 'opt')
     + numCell(moneyFor(forecast.gross_annual_income, forecast.symbol))
-    + numCell('<span class="up">' + moneyFor(forecast.net_annual_income, forecast.symbol) + '</span>') + '</tr>';
+    + numCell('<span>' + moneyFor(forecast.net_annual_income, forecast.symbol) + '</span>') + '</tr>';
 }
 
 function forecastsTotalRowHtml(forecasts) {
@@ -1388,7 +1457,7 @@ function forecastsTotalRowHtml(forecasts) {
     return '<tr class="total"><td>' + totalLabel(c, groups.length) + '</td>'
       + '<td class="num opt"></td><td class="num opt"></td>'
       + numCell(money(sumBy(group.rows, 'gross_annual_income'), c))
-      + numCell('<span class="up">' + money(sumBy(group.rows, 'net_annual_income'), c) + '</span>') + '</tr>';
+      + numCell('<span>' + money(sumBy(group.rows, 'net_annual_income'), c) + '</span>') + '</tr>';
   }).join('');
 }
 
@@ -1411,7 +1480,7 @@ async function renderWatchlist(element) {
 
 function watchRowHtml(row) {
   return '<tr' + (row.state === 'buy_triggered' ? ' class="hit"' : '') + '>'
-    + '<td class="sym">' + esc(row.symbol) + '</td>'
+    + '<td class="sym">' + symHtml(row.symbol) + '</td>'
     + numCell(moneyFor(row.last_price, row.symbol))
     + numCell(moneyFor(row.buy_below, row.symbol))
     + numCell(moneyFor(row.sell_above, row.symbol), 'opt')
@@ -1522,7 +1591,7 @@ function staleFeedHtml(stale) {
 function signalRowHtml(row) {
   var labels = (row.conditions || []).map(function (c) { return esc(c.label); }).join('、');
   return '<tr' + (row.direction === 'BUY' ? ' class="hit"' : '') + '>'
-    + '<td class="sym">' + esc(row.symbol)
+    + '<td class="sym">' + symHtml(row.symbol)
     + (row.muted ? ' <span class="badge">不推播</span>' : '') + '</td>'
     + '<td>' + signalDirectionHtml(row.direction) + '</td>'
     + numCell(moneyFor(row.last_price, row.symbol))
@@ -1553,7 +1622,7 @@ async function renderSubscriptions(element) {
 
 function subscriptionRowHtml(row) {
   var next = row.enabled ? '0' : '1';
-  return '<tr><td class="sym">' + esc(row.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(row.symbol) + '</td>'
     + '<td class="dim">' + esc((row.sources || []).join('、')) + '</td>'
     + '<td>' + (row.enabled ? '<span class="badge ok">開</span>' : '<span class="badge">關</span>') + '</td>'
     + '<td><button class="btn tiny" type="button" data-subscribe="' + esc(row.symbol) + '" data-enable="' + next + '">'
@@ -1595,7 +1664,7 @@ async function renderThresholds(element) {
 }
 
 function thresholdRowHtml(row) {
-  return '<tr><td class="sym">' + esc(row.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(row.symbol) + '</td>'
     + numCell(fmtNum(row.average_cost_discount_percent))
     + numCell(fmtNum(row.short_trend_bias_percent))
     + numCell(fmtNum(row.rsi_oversold))
@@ -1646,7 +1715,7 @@ async function renderSignalHistory(element) {
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'
     + '<th>日期</th><th>代號</th><th>方向</th><th>條件</th><th class="num">當時價</th></tr></thead><tbody>'
     + rows.map(function (row) {
-        return '<tr><td>' + esc(row.event_date) + '</td><td class="sym">' + esc(row.symbol) + '</td>'
+        return '<tr><td>' + esc(row.event_date) + '</td><td class="sym">' + symHtml(row.symbol) + '</td>'
           + '<td>' + signalDirectionHtml(row.direction) + '</td>'
           + '<td class="dim">' + esc((row.conditions || '').replace(/^[^:]*:/, '')) + '</td>'
           + numCell(moneyFor(row.last_price, row.symbol)) + '</tr>';
@@ -1839,7 +1908,7 @@ async function renderManualPositions(element) {
 }
 
 function manualRowHtml(position) {
-  return '<tr><td class="sym">' + esc(position.symbol) + '</td>'
+  return '<tr><td class="sym">' + symHtml(position.symbol) + '</td>'
     + numCell(shares(position.quantity))
     + numCell(moneyFor(position.average_cost, position.symbol))
     + '<td class="opt dim">' + esc(position.note || '') + '</td>'
@@ -1903,7 +1972,7 @@ function assumptionsTableHtml(rows) {
 }
 
 function assumptionRowHtml(row) {
-  return '<tr data-symbol="' + esc(row.symbol) + '"><td class="sym">' + esc(row.symbol) + '</td>'
+  return '<tr data-symbol="' + esc(row.symbol) + '"><td class="sym">' + symHtml(row.symbol) + '</td>'
     + ASSUMPTION_FIELDS.map(function (field) { return numCell(assumptionInputHtml(row, field)); }).join('')
     + '<td class="opt">' + assumptionSourceHtml(row.source) + '</td>'
     + numCell(ratio(row.historical_median_pe, 1), 'opt')

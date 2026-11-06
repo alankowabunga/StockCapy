@@ -1,7 +1,8 @@
-"""Draws the StockCapy mascot as the web app's PWA icons (home-screen, maskable, apple-touch).
+"""Builds the web app's PWA icons and favicon from assets/app-icon-source.jpg.
 
 Run with Pillow installed: `uv pip install pillow && python tools/generate_mascot_icons.py`
-The shapes mirror assets/capy-logo.svg — keep the two in step if either changes.
+The source is a 2048x2048 artwork of the mascot inside a gold rounded frame. Each output is a
+different crop of it, so replacing the source file and re-running regenerates everything.
 """
 
 from __future__ import annotations
@@ -10,94 +11,67 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-FUR = (169, 123, 82, 255)
-FUR_DARK = (138, 98, 68, 255)
-INK = (43, 29, 18, 255)
-GOLD = (247, 189, 52, 255)
-GOLD_DARK = (214, 144, 22, 255)
-ARROW = (120, 74, 10, 255)
-CANVAS = 1024
-SUPERSAMPLE = 4
+SOURCE = Path("assets/app-icon-source.jpg")
+STATIC = Path("src/portfolio/web/static")
+PWA_ICONS = STATIC / "icons"
 
-PWA_ICONS = Path("src/portfolio/web/static/icons")
-# Background gradient built around the app's theme colour (#1462b4) so icon and UI feel like one brand.
-BG_TOP = (46, 128, 214)
-BG_BOTTOM = (14, 78, 150)
-# Android crops maskable icons to a circle; the safe zone is the central 80%.
-MASKABLE_CONTENT_RATIO = 0.80
-
-
-def _scaled(box: tuple[float, float, float, float], factor: float) -> list[float]:
-    return [value * factor for value in box]
+# The gold frame of the artwork, as a square (left, top, right, bottom) in source pixels.
+FRAME = (160, 165, 1890, 1895)
+# Corner radius of that frame, as a fraction of its width.
+FRAME_RADIUS = 0.2
+# The mascot's face, for the favicon: only the head stays readable at 16-48px.
+FACE = (380, 360, 1380, 1360)
+# Android crops maskable icons to a circle (safe zone: radius 40% of the icon). The artwork's own
+# background is a smooth gradient, so shrinking it slightly and letting the full-size copy show
+# around it extends the background without a seam. The coin stack on top is the tightest element.
+MASKABLE_CONTENT_RATIO = 0.92
 
 
-def _draw_head(draw: ImageDraw.ImageDraw, factor: float, with_coin: bool) -> None:
-    """A capybara head is a blunt brick: wide, low, eyes set high and far apart."""
-    unit = CANVAS / 64 * factor
-    dy = 2.5  # centre the whole mascot (coin included) vertically
-    box = lambda x0, y0, x1, y1: _scaled((x0, y0 + dy, x1, y1 + dy), unit)  # noqa: E731
-    draw.rounded_rectangle(box(9, 17, 21, 27), radius=5 * unit, fill=FUR_DARK)
-    draw.rounded_rectangle(box(43, 17, 55, 27), radius=5 * unit, fill=FUR_DARK)
-    draw.rounded_rectangle(box(5, 21, 59, 57), radius=12 * unit, fill=FUR)
-    draw.rounded_rectangle(box(17, 37, 47, 57), radius=10 * unit, fill=FUR_DARK)
-    eye = 9 if not with_coin else 8  # slightly larger eyes when there is no coin (small sizes)
-    draw.ellipse(box(19 - eye / 2, 31 - eye / 2, 19 + eye / 2, 31 + eye / 2), fill=INK)
-    draw.ellipse(box(45 - eye / 2, 31 - eye / 2, 45 + eye / 2, 31 + eye / 2), fill=INK)
-    if with_coin:
-        draw.ellipse(box(26, 45, 31, 49), fill=INK)
-        draw.ellipse(box(33, 45, 38, 49), fill=INK)
-        # Gold coin with an upward arrow: "price going up" at a glance.
-        draw.ellipse(box(23, 1, 41, 19), fill=GOLD_DARK)
-        draw.ellipse(box(24.5, 2.5, 39.5, 17.5), fill=GOLD)
-        draw.polygon([(x * unit, (y + dy) * unit) for x, y in
-                      [(32, 5), (36.5, 10), (33.5, 10), (33.5, 14.5), (30.5, 14.5), (30.5, 10), (27.5, 10)]],
-                     fill=ARROW)
+def _rounded(image: Image.Image) -> Image.Image:
+    """Cuts the corners to the frame's shape so the icon has no background slivers."""
+    scale = 4
+    size = image.width
+    mask = Image.new("L", (size * scale, size * scale), 0)
+    radius = int(size * scale * FRAME_RADIUS)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, size * scale - 1, size * scale - 1), radius=radius, fill=255
+    )
+    rgba = image.convert("RGBA")
+    rgba.putalpha(mask.resize((size, size), Image.LANCZOS))
+    return rgba
 
 
-def _gradient(size: int) -> Image.Image:
-    image = Image.new("RGBA", (size, size))
-    draw = ImageDraw.Draw(image)
-    for row in range(size):
-        t = row / max(1, size - 1)
-        color = tuple(round(BG_TOP[i] + (BG_BOTTOM[i] - BG_TOP[i]) * t) for i in range(3)) + (255,)
-        draw.line([(0, row), (size, row)], fill=color)
-    return image
+def _framed(source: Image.Image, size: int) -> Image.Image:
+    return _rounded(source.crop(FRAME).resize((size, size), Image.LANCZOS))
 
 
-def render(size: int, background: bool, with_coin: bool = True) -> Image.Image:
-    """Supersamples then downscales, because rounded corners alias badly otherwise."""
-    big = size * SUPERSAMPLE
-    image = _gradient(big) if background else Image.new("RGBA", (big, big), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-    _draw_head(draw, big / CANVAS, with_coin)
-    return image.resize((size, size), Image.LANCZOS)
+def _opaque(source: Image.Image, size: int) -> Image.Image:
+    """apple-touch-icon must be opaque; iOS applies its own corner mask."""
+    return source.crop(FRAME).resize((size, size), Image.LANCZOS).convert("RGB")
 
 
-def _on_blue(size: int) -> Image.Image:
-    return render(size, True).convert("RGB")
-
-
-def _maskable(size: int) -> Image.Image:
-    canvas = _gradient(size)
+def _maskable(source: Image.Image, size: int) -> Image.Image:
+    backdrop = source.resize((size, size), Image.LANCZOS)
     content = int(size * MASKABLE_CONTENT_RATIO)
     offset = (size - content) // 2
-    canvas.alpha_composite(render(content, False), (offset, offset))
-    return canvas.convert("RGB")
+    backdrop.paste(source.resize((content, content), Image.LANCZOS), (offset, offset))
+    return backdrop.convert("RGB")
 
 
 def main(output_dir: Path = PWA_ICONS) -> None:
+    source = Image.open(SOURCE).convert("RGB")
     output_dir.mkdir(parents=True, exist_ok=True)
     written = {
-        "icon-192.png": _on_blue(192),
-        "icon-512.png": _on_blue(512),
-        "icon-maskable-512.png": _maskable(512),
-        "apple-touch-icon.png": _on_blue(180),
+        "icon-192.png": _framed(source, 192),
+        "icon-512.png": _framed(source, 512),
+        "icon-maskable-512.png": _maskable(source, 512),
+        "apple-touch-icon.png": _opaque(source, 180),
+        "favicon-48.png": source.crop(FACE).resize((48, 48), Image.LANCZOS),
     }
     for name, image in written.items():
         image.save(output_dir / name)
         print(f"wrote {output_dir / name} ({image.size[0]}x{image.size[1]})")
-    # Tiny sizes drop the coin so the silhouette stays readable.
-    favicon = render(64, True, with_coin=False).convert("RGBA")
+    favicon = source.crop(FACE).resize((64, 64), Image.LANCZOS)
     favicon.save(output_dir.parent / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)])
     print(f"wrote {output_dir.parent / 'favicon.ico'}")
 

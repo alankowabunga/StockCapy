@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/capy-logo.png" alt="StockCapy" width="160">
+  <img src="assets/capy-banner.png" alt="StockCapy" width="760">
 </p>
 
 <h1 align="center">StockCapy</h1>

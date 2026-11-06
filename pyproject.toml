@@ -22,7 +22,7 @@ sc = "portfolio.cli:app"
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "httpx>=0.27"]
 # Only needed to regenerate the mascot PNGs in tools/.
-icons = ["pillow>=11.0"]
+icons = ["pillow>=11.0", "numpy>=1.26"]
 # Optional: the LLM "second layer" narrator (PORTFOLIO_LLM_NARRATION=1). Off by
 # default; the deterministic template needs none of this.
 llm = ["anthropic>=0.40"]

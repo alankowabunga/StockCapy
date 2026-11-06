@@ -81,7 +81,14 @@ main{padding:12px; max-width:1180px; margin:0 auto}
 .panel-head{display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:8px}
 .hint{margin:0; font-size:12px; color:var(--dim)}
 .state{padding:14px 2px; color:var(--dim); font-size:13px}
-footer{padding:4px 12px 20px; max-width:1180px; margin:0 auto; color:var(--dim); font-size:12px}
+.state-art{display:flex; flex-direction:column; align-items:center; gap:10px; padding:10px 2px 16px; text-align:center}
+.state-art img{display:block; height:auto; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
+.login-hero{display:block; width:100%; max-width:340px; height:auto; margin:0 auto 12px; border-radius:14px; box-shadow:0 6px 18px rgba(10,40,90,.18)}
+footer{
+  display:flex; align-items:center; gap:6px; padding:4px 12px 20px; max-width:1180px; margin:0 auto;
+  color:var(--dim); font-size:12px;
+}
+footer img{width:20px; height:20px}
 
 /* controls */
 .btn{
@@ -280,6 +287,7 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
 <main>
   <section id="login-gate" hidden>
     <div class="panel">
+      <img class="login-hero" src="/art/login.webp" alt="" width="640" height="620">
       <div class="panel-head">
         <h2>需要 API token</h2>
         <p class="hint">這台伺服器啟用了認證。貼上 <code>PORTFOLIO_API_TOKEN</code> 的值即可，之後會記住。</p>
@@ -440,7 +448,7 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
   </section>
 </main>
 
-<footer>所有估值為機械模型輸出，非投資建議。</footer>
+<footer><img src="/icons/capy-mark.png" alt="" width="20" height="20">所有估值為機械模型輸出，非投資建議。</footer>
 <div id="toasts"></div>
 <script>
 'use strict';
@@ -540,8 +548,23 @@ function numCell(html, extraClass) {
   return '<td class="num' + (extraClass ? ' ' + extraClass : '') + '">' + html + '</td>';
 }
 
-function emptyStateHtml(message) {
-  return '<div class="state">' + esc(message) + '</div>';
+// Mascot pictures for "nothing here yet" states: [file, display width, intrinsic width, height].
+// Failure messages ("取不到…") deliberately get none; a cheerful picture would mislead.
+var EMPTY_ART = {
+  face: ['face.webp', 120, 240, 240],
+  coins: ['coins.webp', 220, 460, 210],
+  chart: ['chart.webp', 190, 360, 319],
+  coin: ['coin.webp', 104, 200, 176]
+};
+
+function emptyStateHtml(message, art) {
+  var spec = art ? EMPTY_ART[art] : null;
+  if (!spec) {
+    return '<div class="state">' + esc(message) + '</div>';
+  }
+  return '<div class="state state-art"><img src="/art/' + spec[0] + '" alt="" width="' + spec[2]
+    + '" height="' + spec[3] + '" style="width:' + spec[1] + 'px;max-width:100%"><div>'
+    + esc(message) + '</div></div>';
 }
 
 /* ---------- API ---------- */
@@ -634,7 +657,7 @@ function loadTargets() { loadInto(byId('targets-body'), renderTargets); }
 async function renderTargets(element) {
   var targets = await getJson('/targets');
   if (!targets || !targets.length) {
-    element.innerHTML = emptyStateHtml('沒有可評估的標的 —— 先到「資料」分頁匯入 CSV 或新增手動持倉。');
+    element.innerHTML = emptyStateHtml('沒有可評估的標的 —— 先到「資料」分頁匯入 CSV 或新增手動持倉。', 'face');
     return;
   }
   element.innerHTML = targetsTableHtml(targets);
@@ -827,7 +850,7 @@ async function renderPriceChart(element) {
   var series = await getJson('/prices/' + encodeURIComponent(symbol) + '?days=' + PRICE_CHART_DAYS);
   var points = (series && series.points) || [];
   if (points.length < 2) {
-    element.innerHTML = emptyStateHtml('本機還沒有這檔的歷史收盤價（跑一次智慧提醒檢查就會補上）。');
+    element.innerHTML = emptyStateHtml('本機還沒有這檔的歷史收盤價（跑一次智慧提醒檢查就會補上）。', 'chart');
     return;
   }
   element.innerHTML = priceChartHtml(points, averageCost) + priceChartFootHtml(points, averageCost, currencyForSymbol(symbol));
@@ -986,7 +1009,7 @@ async function renderPortfolio(element) {
   var portfolio = await getJson('/portfolio');
   var positions = portfolio.positions || [];
   element.innerHTML = summaryCardsHtml(portfolio.summary || {})
-    + (positions.length ? positionsTableHtml(positions) : emptyStateHtml('目前沒有持倉。'))
+    + (positions.length ? positionsTableHtml(positions) : emptyStateHtml('目前沒有持倉。', 'coins'))
     + weightDonutHtml(positions)
     + sectorExposureHtml(portfolio.sector_exposure || [])
     + homeCurrencyHtml(portfolio.home_currency_summary || {}, positions);
@@ -1251,7 +1274,7 @@ function sectorExposureHtml(exposure) {
 async function renderHistory(element) {
   var points = await getJson('/history');
   if (!points || points.length < 2) {
-    element.innerHTML = emptyStateHtml('淨值快照少於兩天，還畫不出走勢（跑 portfolio snapshot 累積）。');
+    element.innerHTML = emptyStateHtml('淨值快照少於兩天，還畫不出走勢（跑 portfolio snapshot 累積）。', 'chart');
     return;
   }
   element.innerHTML = sparklineHtml(points) + historyRangeHtml(points);
@@ -1319,7 +1342,7 @@ async function renderDividends(element) {
 }
 
 function receiptsTableHtml(receipts) {
-  if (!receipts.length) return emptyStateHtml('匯入的紀錄裡沒有股利資料。');
+  if (!receipts.length) return emptyStateHtml('匯入的紀錄裡沒有股利資料。', 'coin');
   return '<div class="table-wrap"><table class="grid"><thead><tr>'
     + '<th>代號</th><th class="num">股利總額</th><th class="num">預扣稅</th>'
     + '<th class="num">實收淨額</th><th class="num opt">實際稅率</th>'
@@ -1366,7 +1389,7 @@ function receiptsTotalRowHtml(receipts) {
 }
 
 function forecastsTableHtml(forecasts) {
-  if (!forecasts.length) return emptyStateHtml('目前持倉沒有配息股。');
+  if (!forecasts.length) return emptyStateHtml('目前持倉沒有配息股。', 'coin');
   return '<div class="table-wrap"><table class="grid"><thead><tr>'
     + '<th>代號</th><th class="num opt">股數</th><th class="num opt">每股年配息</th>'
     + '<th class="num">年化總額</th><th class="num">稅後預估</th>'
@@ -1400,7 +1423,7 @@ function loadWatchlist() { loadInto(byId('watchlist-body'), renderWatchlist); }
 async function renderWatchlist(element) {
   var rows = await getJson('/watchlist');
   if (!rows || !rows.length) {
-    element.innerHTML = emptyStateHtml('監控清單是空的，用下面的表單加一檔。');
+    element.innerHTML = emptyStateHtml('監控清單是空的，用下面的表單加一檔。', 'face');
     return;
   }
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'
@@ -1539,7 +1562,7 @@ function signalDirectionHtml(direction) {
 async function renderSubscriptions(element) {
   var rows = await getJson('/signals/subscriptions');
   if (!rows || !rows.length) {
-    element.innerHTML = emptyStateHtml('沒有任何股票會收到智慧提醒。匯入持股或在上方加入代號。');
+    element.innerHTML = emptyStateHtml('沒有任何股票會收到智慧提醒。匯入持股或在上方加入代號。', 'face');
     return;
   }
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'
@@ -1641,7 +1664,7 @@ async function submitThreshold(event) {
 async function renderSignalHistory(element) {
   var rows = await getJson('/signals/history');
   if (!rows || !rows.length) {
-    element.innerHTML = emptyStateHtml('還沒有任何觸發紀錄。');
+    element.innerHTML = emptyStateHtml('還沒有任何觸發紀錄。', 'chart');
     return;
   }
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'
@@ -1830,7 +1853,7 @@ function blockStrayDrops() {
 async function renderManualPositions(element) {
   var positions = await getJson('/positions/manual');
   if (!positions || !positions.length) {
-    element.innerHTML = emptyStateHtml('目前沒有手動持倉。');
+    element.innerHTML = emptyStateHtml('目前沒有手動持倉。', 'coins');
     return;
   }
   element.innerHTML = '<div class="table-wrap"><table class="grid"><thead><tr>'

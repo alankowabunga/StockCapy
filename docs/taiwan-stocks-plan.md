@@ -1,7 +1,8 @@
 # 台股支援：計畫與架構設計
 
-> 狀態：**暫停中**（2026-11-06）。本文件給下一位接手的人（或 agent）：已確認的決策、架構設計、做到哪、怎麼接著做。
-> 做完一個階段就更新本文件的「進度」，全部完成後把決策搬進 [decisions.md](decisions.md)（預留 D30–D32），本文件可刪除。
+> 狀態（2026-11-06）：**第 1 階段完成**（監控／提醒／入手價支援台股，已 push 到 `develop`，決策見 [decisions.md](decisions.md) D30）。
+> 第 2、3 階段未開始。本文件給下一位接手的人（或 agent）：已確認的決策、架構設計、做到哪、怎麼接著做。
+> 做完一個階段就更新本文件的「進度」，全部完成後把決策搬進 decisions.md（預留 D31、D32），本文件可刪除。
 
 ## 目標
 
@@ -79,31 +80,36 @@ StockCapy 原本只處理美股。目標是讓台股（上市 `.TW`、上櫃 `.T
 
 ## 進度（暫停當下，2026-11-06）
 
-### 已 commit（本機 `develop`，**尚未 push、尚未部署**）
+### 已 push 到 `origin/develop`（**尚未部署**；部署前要再問使用者）
 
 - `0b70766` 智慧提醒可自選通知對象（D29）
+- `3ba52dc` 台股第 1 階段進行到一半（本計畫與架構交接文件）
+- `838bafd` markets 與大盤基準路由的單元測試
+- `90b458f` CLI／報表金額依市場顯示 NT$／$
+- `6d5b37d` 網頁每檔金額依市場顯示 NT$／$
+- （本次）文件與 `.gitignore`：D30、README、`.env.example`、計畫進度
 
-### 第 1 階段：完成約一半，**未 commit**（主工作目錄）
-
-已完成：
+### 第 1 階段：**完成**（已 commit 並 push 到 `develop`，尚未部署）
 
 - [x] `markets.py`（市場判斷、`resolve_symbol_input`、`InvalidSymbolError`）
 - [x] `market_calendar.py` 依市場判斷新鮮度
 - [x] 大盤基準依市場（`config.tw_benchmark_symbol`、`service.benchmark_symbol_for`）
 - [x] `currency.format_money` / `labeled_money`；`advisor.py`、`renotify.py`、`alerts.py` 改用
 - [x] 代號解析接到 CLI 與 API 的寫入點（見上表）
-- [x] `tests/test_api.py` 一處預期值更新（API 多回傳 `symbol`）；全部 492 個測試通過
-
-未完成：
-
-- [ ] `cli.py` 還有 6 行寫死 `$`（交易列表、snapshot、history、watch auto 輸出）
-- [ ] `report.py` 還有 19 處寫死 `$`（估值明細、股利表、入手價表的 `_money`）；美股照舊、台股改 `NT$`
-- [ ] 網頁 `money(value)`（`index.html` 約 40 處）改成依代號或幣別顯示；有代號的列傳入代號，總計類留到第 2 階段
-- [ ] 新測試：`markets`（後綴判斷、代號解析成功／失敗／不連網時報錯）、`market_calendar` 台股收盤時間、
+- [x] `cli.py`／`report.py` 逐檔金額改依市場顯示（`format_money` + `currency_for_symbol`）；
+      混幣別合計（市值／成本、股利合計、資產走勢）暫留 `$`，待第 2 階段。美股輸出逐字不變
+- [x] 網頁 `index.html`：`money()` 加幣別參數、新增 `moneyFor(value, symbol)`，逐檔欄位改用；總計留 `$`
+- [x] 新測試：`markets`（後綴判斷、代號解析成功／失敗／不連網時報錯）、`market_calendar` 台股收盤時間、
       台股訊號用 `^TWII` 當基準、台股金額顯示 `NT$`、**美股輸出逐字不變**
-- [ ] `.env.example` 補 `PORTFOLIO_TW_BENCHMARK_SYMBOL`；README（指令一覽、監控、智慧提醒處說明台股代號）
-- [ ] decisions.md 寫 **D30**（市場由後綴決定、不存幣別、依市場的收盤與基準、代號自動補後綴）
-- [ ] 用暫存資料夾＋測試 token 開網頁實測（做法見下方「驗證方式」），commit
+- [x] `.env.example` 補 `PORTFOLIO_TW_BENCHMARK_SYMBOL`；README（env 表、第一次使用說明台股代號）
+- [x] decisions.md 寫 **D30**（市場由後綴決定、不存幣別、依市場的收盤與基準、代號自動補後綴）
+- [x] `.claude/worktrees/` 加進 `.gitignore`
+- [x] 全部 511 個測試通過
+
+尚未做（非第 1 階段的程式邏輯，待使用者需要時再進行）：
+
+- [ ] 用暫存資料夾＋測試 token 開網頁、以一檔真實台股代號端到端實測（做法見下方「驗證方式」）。
+      需連外抓 yfinance 報價，且應在私人環境用真資料跑，不進公開 repo。
 
 ### 第 2 階段：未開始
 
@@ -116,9 +122,9 @@ StockCapy 原本只處理美股。目標是讓台股（上市 `.TW`、上櫃 `.T
 
 1. **第 3 階段請從最新的 `develop` 重開**，不要沿用上面那個 worktree：它是從公開 repo 的第一個 commit（`eecddfc`）開出來的，
    缺少之後的 README 更新與 D29。確認沒有要留的東西後，用 `git worktree remove` 清掉它。
-2. **`.claude/worktrees/` 要加進 `.gitignore`**，目前在主目錄顯示為未追蹤，避免誤 commit。
+2. ~~`.claude/worktrees/` 要加進 `.gitignore`~~（已加，見本次文件 commit）。
 3. **這是公開 repo**：測試與範例只用合成數字；帳號、IP、真實持股只能放 gitignored 的 `docs/private/`。commit 身分是 GitHub noreply 地址（repo 層級已設定）。
-4. **決策編號**：D29 已用；預留 D30（第 1 階段）、D31（第 2 階段）、D32（第 3 階段）。
+4. **決策編號**：D29、D30 已用（D30＝第 1 階段）；預留 D31（第 2 階段）、D32（第 3 階段）。
 5. **寫程式規範**：method 約 20 行內、參數 ≤ 4、命名完整、註解只寫「為什麼」且 ≤ 3 行、新功能必附單元測試。
 6. **部署**：VM 從公開 repo 的 `main` 拉程式，指令在本機的 `docs/private/deploy-gce.md`。部署前要先問使用者、先備份資料庫。
 

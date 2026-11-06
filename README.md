@@ -89,6 +89,7 @@ docker compose up -d
 2. **看入手價**：「入手價」分頁列出每檔的參考合理價、入手價、現價還差幾 %。點一列可以看是哪些估值模型算出來的、為什麼。
 3. **設提醒**：在「監控」分頁設定買進／賣出提醒價（或用 CLI `stockcapy watch auto` 依入手價一次設好所有持股）。
    「智慧提醒」預設會看你所有的持股與監控清單；不想收某一檔，或想多看一檔沒持有的，到「智慧提醒」分頁的「通知對象」開關。
+   台股直接打代號數字即可（例如 `2330`），會自動補成 `.TW`（上市）或 `.TWO`（上櫃）；金額依市場顯示 `NT$` 或 `$`。
 4. **接上手機通知**：照[Telegram 推播](#telegram-推播)取得 bot token 和 chat id 填進 `.env`，然後：
 
    ```bash
@@ -539,6 +540,7 @@ launchctl load ~/Library/LaunchAgents/com.stockcapy.snapshot.plist
 | `PORTFOLIO_MESSAGE_STYLE` | `plain` | 通知格式：`compact` / `plain` / `full` |
 | `PORTFOLIO_CHECK_INTERVAL_MINUTES` | Docker 30，本機 0 | 內建排程間隔；0 = 不自動檢查 |
 | `PORTFOLIO_HOME_CURRENCY` | `TWD` | 本國貨幣 |
+| `PORTFOLIO_TW_BENCHMARK_SYMBOL` | `^TWII` | 台股訊號的大盤基準（美股固定用 `PORTFOLIO_BENCHMARK_SYMBOL`，預設 SPY） |
 | `PORTFOLIO_NRA_WITHHOLDING` | `0.30` | 股利預扣稅率（台灣居民非美國人為 30%） |
 | `PORTFOLIO_DATA_DIR` | `./data` | 資料庫位置 |
 

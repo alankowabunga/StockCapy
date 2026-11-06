@@ -16,3 +16,4 @@ __pycache__/
 # 個人筆記與本機設定（不公開）
 /docs/private/
 .claude/settings.local.json
+.claude/worktrees/

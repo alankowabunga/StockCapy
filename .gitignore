@@ -6,6 +6,7 @@
 *.sqlite3
 *.csv
 !examples/sample_firstrade_history.csv
+!src/portfolio/web/static/templates/*.csv
 
 .venv/
 __pycache__/

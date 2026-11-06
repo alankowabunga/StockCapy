@@ -34,6 +34,7 @@ from ..repository import (
     save_alert_rule,
     save_manual_position,
 )
+from .. import importers
 from ..performance import ExchangeRateUnavailableError
 from ..service import NoPositionsError, load_performance, load_positions, resolve_for_symbols
 from ..signal_config import (
@@ -51,6 +52,7 @@ from . import serializers as ser
 from .. import service
 
 STATIC_DIR = Path(__file__).parent / "static"
+DEFAULT_IMPORT_FORMAT = importers.DEFAULT_FORMAT_KEY
 
 
 class WatchRequest(BaseModel):
@@ -501,18 +503,28 @@ def _to_manual_position(request: ManualPositionRequest, symbol: str) -> ManualPo
     )
 
 def _register_import_route(app: FastAPI, settings: Settings, client: MarketDataClient) -> None:
+    @app.get("/api/import/formats")
+    def list_import_formats() -> list[dict]:
+        return [ser.serialize_import_format(fmt) for fmt in importers.list_formats()]
+
     @app.post("/api/import")
-    async def import_csv(file: UploadFile = File(...)) -> dict:
+    async def import_csv(file: UploadFile = File(...), format: str = DEFAULT_IMPORT_FORMAT) -> dict:
         payload = await file.read()
-        return _import_uploaded_csv(settings, payload)
+        return _import_uploaded_csv(settings, payload, format)
 
 
-def _import_uploaded_csv(settings: Settings, payload: bytes) -> dict:
+def _import_uploaded_csv(settings: Settings, payload: bytes, format_key: str) -> dict:
     with tempfile.NamedTemporaryFile(suffix=".csv", delete=True) as handle:
         handle.write(payload)
         handle.flush()
         try:
-            outcome = service.import_transactions(settings, Path(handle.name))
+            outcome = service.import_transactions(
+                settings, Path(handle.name), format_key=format_key
+            )
+        except importers.UnknownImportFormatError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        except importers.ImportFormatError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
         except UnrecognizedCsvLayoutError as error:
             raise HTTPException(status_code=400, detail=f"無法識別這個 CSV 的欄位：{error}") from error
     return ser.serialize_import_outcome(outcome)

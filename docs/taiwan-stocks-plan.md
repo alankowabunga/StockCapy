@@ -1,8 +1,8 @@
 # 台股支援：計畫與架構設計
 
 > 狀態（2026-11-06）：**第 1 階段完成**（監控／提醒／入手價支援台股，已 push 到 `develop`，決策見 [decisions.md](decisions.md) D30）。
-> 第 2 階段完成（D31），第 3 階段見下方。本文件給下一位接手的人（或 agent）：已確認的決策、架構設計、做到哪、怎麼接著做。
-> 做完一個階段就更新本文件的「進度」，全部完成後把決策搬進 decisions.md（預留 D32），本文件可刪除。
+> 第 2 階段（D31）、第 3 階段（D32）完成；只剩個別台股券商的專屬格式（等匯出範例）與部署。本文件給下一位接手的人（或 agent）：已確認的決策、架構設計、做到哪、怎麼接著做。
+> 做完一個階段就更新本文件的「進度」，全部完成後把決策搬進 decisions.md（預留 D32），本文件可刪除（D31、D32 已寫入）。
 
 ## 目標
 
@@ -119,7 +119,14 @@ StockCapy 原本只處理美股。目標是讓台股（上市 `.TW`、上櫃 `.T
 - [x] CLI 與網頁總覽：台幣合計＋美股／台股小計；手動持倉提示台股均價填台幣
 - [x] 測試：`test_taiwan_portfolio.py`、`test_taiwan_api.py`
 
-### 第 3 階段：只開了頭
+### 第 3 階段：**完成**（決策見 D32；已 commit，尚未部署）
+
+- [x] `importers.py` 格式註冊表；`generic-us`、`generic-tw` 解析（全有或全無、列號錯誤訊息）
+- [x] API `format` 參數與 `/api/import/formats`、CLI `--format`、網頁兩區匯入、範本下載
+- [x] 測試：`test_importers.py`、`test_import_api.py`
+- [ ] 個別台股券商專屬格式：等使用者提供去識別化的匯出範例
+
+（以下為先前的紀錄）
 
 - 曾交給一個背景 agent，已停止。它的 worktree 在 `.claude/worktrees/agent-a0743cb7e3eee7163`，
   只改了 `firstrade_csv.py` 兩行，**沒有 commit**。

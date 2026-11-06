@@ -13,7 +13,7 @@ from .config import Settings
 from .currency import pair_symbol
 from .diagnostics import MissingHistoryWarning, detect_missing_cost_basis
 from .dividends import DividendReceipt, ForwardDividendForecast, forecast_dividends, summarize_received_dividends
-from .firstrade_csv import BrokerageTransaction, load_transaction_csv
+from .firstrade_csv import BrokerageTransaction
 from .holdings import Position, PositionLedger, build_ledger
 from .indicators import SHORT_TREND_WINDOW, compute_indicators, moving_average_series
 from .market import MarketDataClient
@@ -234,12 +234,16 @@ def default_target_symbols(settings: Settings, positions: list[Position]) -> lis
 
 
 def import_transactions(
-    settings: Settings, csv_path: Path, client: MarketDataClient | None = None
+    settings: Settings,
+    csv_path: Path,
+    client: MarketDataClient | None = None,
+    format_key: str | None = None,
 ) -> ImportOutcome:
     from .fx_sync import backfill_transaction_fx
+    from .importers import get_format
     from .repository import save_transactions
 
-    transactions = load_transaction_csv(csv_path)
+    transactions = get_format(format_key).parser(csv_path)
     with open_store(settings.database_path) as connection:
         inserted = save_transactions(connection, transactions)
     if client is not None:

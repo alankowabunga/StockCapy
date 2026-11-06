@@ -134,7 +134,8 @@ td.sym{font-weight:650}
 .box.warn{background:var(--warn-bg); border-color:var(--warn-border); color:var(--warn-text)}
 .box.error{background:var(--err-bg); border-color:var(--err-border); color:var(--err-text)}
 .box.ok-box{background:var(--hit-bg); border-color:var(--hit-border)}
-.box .err-msg{margin:4px 0 8px; font-size:12px; word-break:break-word}
+.inline-field{display:inline-flex; gap:6px; align-items:center; font-size:13px; margin-bottom:4px}
+.box .err-msg{margin:4px 0 8px; font-size:12px; word-break:break-word; white-space:pre-wrap}
 .chips{display:flex; gap:5px; flex-wrap:wrap; margin-top:6px}
 .chip{background:var(--chip); border-radius:5px; padding:1px 7px; font-size:12px; color:var(--dim)}
 .chip b{color:var(--text)}
@@ -387,17 +388,7 @@ dl.facts dd{margin:0; text-align:right; font-variant-numeric:tabular-nums}
   </section>
 
   <section id="tab-data" hidden>
-    <div class="panel">
-      <div class="panel-head">
-        <h2>匯入券商 CSV</h2>
-        <p class="hint">建議每次都拉「開戶至今」的完整區間，重複的列會自動去重。</p>
-      </div>
-      <div class="drop" id="drop-zone" tabindex="0" role="button">
-        把 CSV 拖到這裡，或點此選擇檔案
-      </div>
-      <input type="file" id="csv-input" accept=".csv,text/csv" hidden>
-      <div id="import-result" style="margin-top:8px"></div>
-    </div>
+    <div id="import-panels"><div class="state">載入中…</div></div>
 
     <div class="panel">
       <div class="panel-head">
@@ -510,9 +501,10 @@ function signedPercent(value, digits) {
   return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
 }
 
-function signedMoney(value) {
+function signedMoney(value, currency) {
   if (!isNumber(value)) return '<span class="dim">' + DASH + '</span>';
-  var text = (value >= 0 ? '+$' : '-$') + decimals(Math.abs(value), 2, 2);
+  var mark = CURRENCY_MARKS[currency || 'USD'] || '$';
+  var text = (value >= 0 ? '+' : '-') + mark + decimals(Math.abs(value), 2, 2);
   return '<span class="' + (value >= 0 ? 'up' : 'down') + '">' + text + '</span>';
 }
 
@@ -1153,7 +1145,7 @@ function positionRowHtml(position) {
     + numCell(moneyFor(position.average_cost, position.symbol) + unpricedMark(position), 'opt')
     + numCell(moneyFor(position.last_price, position.symbol))
     + numCell(moneyFor(position.market_value, position.symbol))
-    + numCell(signedMoney(position.unrealized_gain))
+    + numCell(signedMoney(position.unrealized_gain, currencyForSymbol(position.symbol)))
     + numCell(signedPercent(position.unrealized_return_percent, 2))
     + numCell(plainPercent(position.weight_percent, 1), 'opt')
     + '<td class="opt dim">' + esc(position.sector || DASH) + '</td></tr>';
@@ -1653,18 +1645,81 @@ async function runSignalCheck() {
 /* ---------- 資料：CSV 匯入 ---------- */
 
 function loadDataTab() {
+  buildImportPanels().catch(function (error) { setErrorHtml(byId('import-panels'), error); });
   loadInto(byId('manual-body'), renderManualPositions);
   loadInto(byId('assumptions-body'), renderAssumptions);
 }
 
-async function uploadCsv(file) {
+/* 匯入分「美股券商」「台股券商」兩區：先選格式再上傳，不自動判斷（讀錯格式會悄悄算錯錢）。 */
+var MARKET_PANEL_TITLES = {US: '匯入美股券商 CSV', TW: '匯入台股券商 CSV'};
+var importPanelsBuilt = false;
+
+async function buildImportPanels() {
+  if (importPanelsBuilt) return;
+  var host = byId('import-panels');
+  var formats = await getJson('/import/formats');
+  if (!formats || !formats.length) {
+    host.innerHTML = emptyStateHtml('取不到可用的匯入格式。');
+    return;
+  }
+  host.innerHTML = ['US', 'TW'].map(function (market) {
+    return importPanelHtml(market, formats.filter(function (f) { return f.market === market; }));
+  }).join('');
+  host.querySelectorAll('[data-import-market]').forEach(function (panel) {
+    bindImportPanel(panel, formats);
+  });
+  importPanelsBuilt = true;
+}
+
+function importPanelHtml(market, formats) {
+  if (!formats.length) return '';
+  var options = formats.map(function (f) {
+    return '<option value="' + esc(f.key) + '">' + esc(f.label) + '</option>';
+  }).join('');
+  return '<div class="panel" data-import-market="' + market + '">'
+    + '<div class="panel-head"><h2>' + MARKET_PANEL_TITLES[market] + '</h2>'
+    + (market === 'US' ? '<p class="hint">建議每次都拉「開戶至今」的完整區間，重複的列會自動去重。</p>'
+                       : '<p class="hint">台股以台幣計價；代號要寫完整（2330.TW 上市、6488.TWO 上櫃）。</p>')
+    + '</div>'
+    + '<label class="inline-field">格式 <select data-format-select>' + options + '</select></label>'
+    + '<div class="hint" data-format-help style="margin:6px 0"></div>'
+    + '<div class="drop" data-drop tabindex="0" role="button">把 CSV 拖到這裡，或點此選擇檔案</div>'
+    + '<input type="file" data-file-input accept=".csv,text/csv" hidden>'
+    + '<div data-import-result style="margin-top:8px"></div></div>';
+}
+
+function formatHelpHtml(format) {
+  return esc(format.instructions)
+    + (format.template_url ? ' <a href="' + esc(format.template_url) + '" download>下載範本</a>' : '');
+}
+
+function bindImportPanel(panel, formats) {
+  var select = panel.querySelector('[data-format-select]');
+  var help = panel.querySelector('[data-format-help]');
+  var zone = panel.querySelector('[data-drop]');
+  var input = panel.querySelector('[data-file-input]');
+  var showHelp = function () {
+    var chosen = formats.filter(function (f) { return f.key === select.value; })[0];
+    help.innerHTML = chosen ? formatHelpHtml(chosen) : '';
+  };
+  select.addEventListener('change', showHelp);
+  showHelp();
+  var upload = function (file) { uploadCsv(file, select.value, panel.querySelector('[data-import-result]')); };
+  zone.addEventListener('click', function () { input.click(); });
+  zone.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); input.click(); }
+  });
+  input.addEventListener('change', function () { upload(input.files[0]); input.value = ''; });
+  bindDropEvents(zone, upload);
+}
+
+async function uploadCsv(file, formatKey, output) {
   if (!file) return;
-  var output = byId('import-result');
   output.innerHTML = '<div class="state">上傳並解析 ' + esc(file.name) + '…</div>';
   var body = new FormData();
   body.append('file', file);
   try {
-    var result = await request('/import', {method: 'POST', body: body});
+    var result = await request('/import?format=' + encodeURIComponent(formatKey), {method: 'POST', body: body});
     output.innerHTML = importResultHtml(result);
     loadDataTab();
   } catch (error) {
@@ -1693,18 +1748,7 @@ function importWarningsHtml(warnings) {
   }).join('');
 }
 
-function bindUploadZone() {
-  var zone = byId('drop-zone');
-  var input = byId('csv-input');
-  zone.addEventListener('click', function () { input.click(); });
-  zone.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); input.click(); }
-  });
-  input.addEventListener('change', function () { uploadCsv(input.files[0]); input.value = ''; });
-  bindDropEvents(zone);
-}
-
-function bindDropEvents(zone) {
+function bindDropEvents(zone, upload) {
   ['dragenter', 'dragover'].forEach(function (name) {
     zone.addEventListener(name, function (event) { event.preventDefault(); zone.classList.add('drag'); });
   });
@@ -1714,8 +1758,12 @@ function bindDropEvents(zone) {
   zone.addEventListener('drop', function (event) {
     event.preventDefault();
     zone.classList.remove('drag');
-    uploadCsv(event.dataTransfer && event.dataTransfer.files[0]);
+    upload(event.dataTransfer && event.dataTransfer.files[0]);
   });
+}
+
+/* 拖到區塊外時不要讓瀏覽器直接開檔案。 */
+function blockStrayDrops() {
   window.addEventListener('dragover', function (event) { event.preventDefault(); });
   window.addEventListener('drop', function (event) { event.preventDefault(); });
 }
@@ -1942,7 +1990,7 @@ async function init() {
   byId('manual-form').addEventListener('submit', submitManualPosition);
   byId('assumption-form').addEventListener('submit', submitAssumptionOverride);
   byId('login-form').addEventListener('submit', submitLogin);
-  bindUploadZone();
+  blockStrayDrops();
   if (await needsLogin()) {
     showLoginGate(true);
     return;

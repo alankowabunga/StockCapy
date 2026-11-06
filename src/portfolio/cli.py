@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from . import report, service
+from . import importers, report, service
 from .alerts import build_statuses, evaluate_rules
 from .backtest import backtest_signals
 from .signals import PriceHistory
@@ -116,11 +116,23 @@ def _adhoc_override(
 
 @app.command("import")
 def import_csv(
-    csv_path: Annotated[Path, typer.Argument(help="Firstrade 匯出的交易紀錄 CSV")],
+    csv_path: Annotated[Path, typer.Argument(help="券商匯出的交易紀錄 CSV")],
+    format_key: Annotated[
+        str,
+        typer.Option(
+            "--format",
+            help="匯入格式：firstrade（預設）、generic-us（通用美股）、generic-tw（通用台股）",
+        ),
+    ] = importers.DEFAULT_FORMAT_KEY,
 ) -> None:
-    """匯入 Firstrade 交易紀錄 CSV（可重複匯入，重疊資料會自動去重）。"""
+    """匯入交易紀錄 CSV（可重複匯入，重疊資料會自動去重）。"""
     try:
-        outcome = service.import_transactions(_settings(), csv_path, MarketDataClient())
+        outcome = service.import_transactions(
+            _settings(), csv_path, MarketDataClient(), format_key
+        )
+    except (importers.UnknownImportFormatError, importers.ImportFormatError) as error:
+        console.print(f"[red]{error}[/red]")
+        raise typer.Exit(code=1) from error
     except UnrecognizedCsvLayoutError as error:
         console.print(f"[red]無法識別這個 CSV 的欄位：[/red] {error}")
         raise typer.Exit(code=1) from error

@@ -1,0 +1,4 @@
+date,symbol,action,quantity,price,fee,tax,note
+2026-01-15,AAPL,BUY,10,150.00,0,0,範例資料
+2026-03-10,AAPL,DIVIDEND,,2.40,0,0.72,股利：價格欄填整筆金額，稅欄填被扣的稅
+2026-06-02,AAPL,SELL,4,180.00,0,0,

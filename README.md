@@ -83,7 +83,7 @@ docker compose up -d
 
 ## 第一次使用：四個步驟
 
-1. **放進持股**：到「資料」分頁上傳券商匯出的 CSV（目前支援 Firstrade，見[怎麼拿 Firstrade 的資料](#怎麼拿-firstrade-的資料)），
+1. **放進持股**：到「資料」分頁上傳券商匯出的 CSV（分「美股券商」「台股券商」兩區，先選格式；Firstrade 見[怎麼拿 Firstrade 的資料](#怎麼拿-firstrade-的資料)，其他券商見[通用格式](#其他券商與台股通用格式)），
    或在「手動持倉」輸入代號、股數、均價。想先看效果，可以上傳範例檔
    [`examples/sample_firstrade_history.csv`](examples/sample_firstrade_history.csv)（假資料）。
 2. **看入手價**：「入手價」分頁列出每檔的參考合理價、入手價、現價還差幾 %。點一列可以看是哪些估值模型算出來的、為什麼。
@@ -131,7 +131,7 @@ cp .env.example .env
 | `stockcapy watch add/list/remove` | 手動管理監控清單與提醒價位 |
 | `stockcapy value <SYM>` | 單檔的完整估值模型明細與假設 |
 | `stockcapy add-position` | 手動輸入持倉（沒有 CSV 或匯出檔不完整時） |
-| `stockcapy import <csv>` | 匯入券商交易紀錄（可重複匯入，自動去重） |
+| `stockcapy import <csv> [--format firstrade\|generic-us\|generic-tw]` | 匯入券商交易紀錄（可重複匯入，自動去重；預設 Firstrade） |
 | `stockcapy show` | 現價、我的平均成本、未實現損益、權重、產業曝險、**台幣損益歸因** |
 | `stockcapy risk` | 年化波動度、最大回撤、Sharpe、與 SPY 相關性 |
 | `stockcapy dividends` | 已領股利（含 30% 預扣稅）與未來一年配息預估 |
@@ -463,6 +463,28 @@ Firstrade 中文匯出有三個陷阱，解析器都處理了：
 stockcapy import examples/sample_firstrade_history.csv && stockcapy show
 ```
 
+## 其他券商與台股：通用格式
+
+沒有專屬解析器的券商，整理成範本的欄位就能匯入。**先選格式再上傳**（程式不猜格式，猜錯會悄悄算錯錢）：
+
+| 格式 | 用途 | 範本 |
+|---|---|---|
+| `generic-us` | 其他美股券商，金額以美元計 | [`generic-us.csv`](src/portfolio/web/static/templates/generic-us.csv) |
+| `generic-tw` | 台股券商，金額以台幣計 | [`generic-tw.csv`](src/portfolio/web/static/templates/generic-tw.csv) |
+
+```bash
+stockcapy import my_tw_trades.csv --format generic-tw
+```
+
+欄位（中英文欄名都認）：`date/日期, symbol/代號, action/動作, quantity/股數, price/價格, fee/手續費, tax/稅, note/備註`。
+
+- **動作**：`BUY / SELL / DIVIDEND`，或 `買進 / 賣出 / 股利`。日期 `YYYY-MM-DD` 或 `YYYY/MM/DD`。
+- **台股代號要寫完整**：`2330.TW`（上市）、`6488.TWO`（上櫃）；純數字會被拒絕並告訴你怎麼改，不在匯入時猜上市或上櫃。
+- **賣出**的「稅」欄是證交稅，會併入賣出成本；**股利**的「價格」欄填整筆金額、「稅」欄填被扣的稅（如二代健保補充保費）。
+- **整份檔案任何一列有問題就整份不匯入**，並列出第幾列、哪裡錯，改好再傳；不會只匯一半。
+- 同一天兩筆完全相同的成交（零股常見）會各自保留；重傳同一份檔案不會重複。
+- 拿到自己的券商匯出檔、想要專屬格式，到 [Issues](https://github.com/alankowabunga/StockCapy/issues) 附上**去識別化**的範例列。
+
 ## 成本基礎的算法
 
 用**移動平均法**（moving average）：每次買進累加成本、賣出按當時均價釋放成本並結算已實現損益。
@@ -549,7 +571,7 @@ launchctl load ~/Library/LaunchAgents/com.stockcapy.snapshot.plist
 - **行情來自 yfinance**（非官方 Yahoo 介面），免費但約延遲 15 分鐘，偶有抓取失敗或欄位缺漏；目前只支援這個來源。
 - **成本基礎為移動平均法**，與券商報稅用的 FIFO 不同。
 - **風險指標是「目前持倉」的回溯計算**，不是你歷史實際交易的績效（那需要每日快照累積）。
-- **券商匯入目前只支援 Firstrade 的 CSV**；其他券商請用手動輸入持倉。現金餘額也需手動輸入。
+- **只有 Firstrade 有專屬解析器**；其他券商（含台股券商）用[通用格式](#其他券商與台股通用格式)或手動輸入持倉。現金餘額也需手動輸入。
 - **ETF 的年配息用「近 12 個月實際配息」推算**（yfinance 不提供 ETF 的 `dividendRate`）。
 - **匯率是 Yahoo 參考匯率**，與券商複委託實際成交匯率有價差。
 - **桌面通知只支援 macOS**（用內建 `osascript`）；要推到手機請設定 Telegram 或 email。

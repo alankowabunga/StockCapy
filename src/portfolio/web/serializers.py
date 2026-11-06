@@ -385,3 +385,13 @@ def serialize_import_outcome(outcome: ImportOutcome) -> dict:
             for warning in outcome.warnings
         ],
     }
+
+
+def serialize_import_format(fmt) -> dict:
+    return {
+        "key": fmt.key,
+        "market": fmt.market_code,
+        "label": fmt.label,
+        "instructions": fmt.instructions,
+        "template_url": f"/templates/{fmt.template}" if fmt.template else None,
+    }

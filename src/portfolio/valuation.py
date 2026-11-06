@@ -5,10 +5,19 @@ from dataclasses import dataclass, field
 from statistics import median
 
 from .market import Fundamentals
+from .uncertainty import UncertaintyAssessment, assess_uncertainty
 
 GRAHAM_MULTIPLIER = 22.5
 GRAHAM_MAX_PE = 25.0
 MIN_DIVIDEND_YIELD_PERCENT = 2.0
+
+# PEG is a growth-stock tool: for slow growers "multiple = growth" yields absurdly low
+# multiples, so below this expected growth the model stays out.
+MIN_PEG_GROWTH = 0.15
+DCF_YEARS = 10
+# Cash-flow models misread these: bank cash flow is mostly lending, and REIT free cash
+# flow is understated by depreciation on property that does not wear out.
+DCF_EXCLUDED_SECTORS = frozenset({"Financial Services", "Real Estate"})
 
 
 @dataclass(frozen=True)
@@ -19,6 +28,12 @@ class ValuationAssumptions:
     required_return: float = 0.09
     dividend_growth: float = 0.04
     margin_of_safety: float = 0.20
+    # Growth-model choices. Code-level defaults, not stored per symbol (yet).
+    peg_target: float = 1.0
+    growth_cap: float = 0.20
+    terminal_growth: float = 0.03
+    # True until the user states a margin themselves; then it is theirs, exactly.
+    adaptive_margin: bool = True
 
 
 @dataclass(frozen=True)
@@ -44,6 +59,7 @@ class ValuationReport:
     symbol: str
     last_price: float
     estimates: list[ValuationEstimate] = field(default_factory=list)
+    earnings_growth: float | None = None
 
     @property
     def aggregated_values(self) -> list[float]:
@@ -63,11 +79,24 @@ class ValuationReport:
         values = self.aggregated_values
         return (min(values), max(values)) if values else None
 
+    def uncertainty(self) -> UncertaintyAssessment:
+        return assess_uncertainty(
+            len(self.aggregated_values),
+            self.model_disagreement_percent(),
+            self.earnings_growth,
+        )
+
+    def effective_margin_of_safety(self, assumptions: ValuationAssumptions) -> float:
+        """The user's margin, widened when the fair value is shaky (see uncertainty.py)."""
+        return self.uncertainty().effective_margin(
+            assumptions.margin_of_safety, assumptions.adaptive_margin
+        )
+
     def buy_below_price(self, assumptions: ValuationAssumptions) -> float | None:
         midpoint = self.median_fair_value
         if midpoint is None:
             return None
-        return midpoint * (1 - assumptions.margin_of_safety)
+        return midpoint * (1 - self.effective_margin_of_safety(assumptions))
 
     def upside_percent(self) -> float | None:
         midpoint = self.median_fair_value
@@ -144,6 +173,96 @@ def target_multiple_value(
     )
 
 
+def implied_earnings_growth(fundamentals: Fundamentals) -> float | None:
+    """Next-year expected EPS over reported EPS, minus one. None unless both are positive:
+    a growth rate off a loss or a missing estimate would be a made-up number."""
+    trailing = fundamentals.number("trailingEps") or 0.0
+    forward = fundamentals.number("forwardEps") or 0.0
+    if trailing <= 0 or forward <= 0:
+        return None
+    return forward / trailing - 1
+
+
+def peg_value(
+    fundamentals: Fundamentals, assumptions: ValuationAssumptions
+) -> ValuationEstimate:
+    """Growth-adjusted multiple: fair forward P/E = PEG target x growth (in percent).
+    Pairs forward EPS with a forward-looking multiple, so growth is counted once."""
+    growth = implied_earnings_growth(fundamentals)
+    forward_eps = fundamentals.number("forwardEps") or 0.0
+    applicable = growth is not None and growth >= MIN_PEG_GROWTH
+    capped = min(growth, assumptions.growth_cap) if applicable else None
+    fair_pe = assumptions.peg_target * capped * 100 if capped is not None else None
+    return ValuationEstimate(
+        model_name="PEG（成長調整）",
+        fair_value=forward_eps * fair_pe if fair_pe is not None else None,
+        assumptions={
+            "forwardEps": forward_eps,
+            "impliedGrowth": growth or 0.0,
+            "growthUsed": capped or 0.0,
+            "pegTarget": assumptions.peg_target,
+        },
+        note=(
+            f"僅適用預期 EPS 成長 >= {MIN_PEG_GROWTH:.0%} 的成長股；"
+            f"成長率上限 {assumptions.growth_cap:.0%}（成長不會永遠維持），"
+            "結論取決於 PEG 目標與成長假設"
+        ),
+        is_applicable=applicable,
+    )
+
+
+def _discounted_cash_flow_per_share(
+    cash_flow_per_share: float, start_growth: float, assumptions: ValuationAssumptions
+) -> float:
+    """Growth fades in a straight line from `start_growth` (year 1) to the terminal rate
+    (final year); the value after that is a Gordon perpetuity."""
+    rate, terminal = assumptions.required_return, assumptions.terminal_growth
+    cash_flow, present_value = cash_flow_per_share, 0.0
+    for year in range(1, DCF_YEARS + 1):
+        fade = (year - 1) / (DCF_YEARS - 1)
+        cash_flow *= 1 + start_growth + (terminal - start_growth) * fade
+        present_value += cash_flow / (1 + rate) ** year
+    terminal_value = cash_flow * (1 + terminal) / (rate - terminal)
+    return present_value + terminal_value / (1 + rate) ** DCF_YEARS
+
+
+def dcf_value(
+    fundamentals: Fundamentals, assumptions: ValuationAssumptions
+) -> ValuationEstimate:
+    free_cash_flow = fundamentals.number("freeCashflow") or 0.0
+    shares = fundamentals.number("sharesOutstanding") or 0.0
+    terminal = assumptions.terminal_growth
+    eligible = (
+        free_cash_flow > 0
+        and shares > 0
+        and assumptions.required_return > terminal
+        and fundamentals.text("sector") not in DCF_EXCLUDED_SECTORS
+    )
+    growth = implied_earnings_growth(fundamentals)
+    start_growth = min(max(growth, terminal), assumptions.growth_cap) if growth else terminal
+    value = (
+        _discounted_cash_flow_per_share(free_cash_flow / shares, start_growth, assumptions)
+        if eligible
+        else None
+    )
+    return ValuationEstimate(
+        model_name="DCF（現金流折現）",
+        fair_value=value,
+        assumptions={
+            "freeCashFlowPerShare": free_cash_flow / shares if shares else 0.0,
+            "startGrowth": start_growth,
+            "terminalGrowth": terminal,
+            "discountRate": assumptions.required_return,
+        },
+        note=(
+            f"{DCF_YEARS} 年成長逐年淡出到終值成長 {terminal:.0%}；"
+            "自由現金流取自財報（未扣股票薪酬、未加淨現金），終值佔比大、對假設極敏感；"
+            "金融／不動產業不適用"
+        ),
+        is_applicable=eligible,
+    )
+
+
 def gordon_growth_value(
     fundamentals: Fundamentals, assumptions: ValuationAssumptions
 ) -> ValuationEstimate:
@@ -183,7 +302,14 @@ def build_valuation_report(
     estimates = [
         graham_number(fundamentals),
         target_multiple_value(fundamentals, assumptions),
+        peg_value(fundamentals, assumptions),
+        dcf_value(fundamentals, assumptions),
         gordon_growth_value(fundamentals, assumptions),
         analyst_consensus_value(fundamentals),
     ]
-    return ValuationReport(symbol=symbol, last_price=last_price, estimates=estimates)
+    return ValuationReport(
+        symbol=symbol,
+        last_price=last_price,
+        estimates=estimates,
+        earnings_growth=implied_earnings_growth(fundamentals),
+    )

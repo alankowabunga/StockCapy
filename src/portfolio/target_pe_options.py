@@ -82,6 +82,7 @@ class ValuationPreview:
     buy_below: float | None
     upside_percent: float | None
     model_count: int
+    margin_of_safety: float
 
 
 def _preview(context: TargetPeContext, assumptions: ValuationAssumptions) -> ValuationPreview:
@@ -95,6 +96,11 @@ def _preview(context: TargetPeContext, assumptions: ValuationAssumptions) -> Val
         buy_below=report.buy_below_price(assumptions),
         upside_percent=report.upside_percent(),
         model_count=len(report.aggregated_values),
+        margin_of_safety=(
+            report.effective_margin_of_safety(assumptions)
+            if report.aggregated_values
+            else assumptions.margin_of_safety
+        ),
     )
 
 
@@ -113,7 +119,7 @@ def _candidate(
         upside_percent=preview.upside_percent,
         model_count=preview.model_count,
         verdict=build_entry_verdict(
-            VerdictInputs(preview.upside_percent, assumptions.margin_of_safety, preview.model_count)
+            VerdictInputs(preview.upside_percent, preview.margin_of_safety, preview.model_count)
         ),
         premium_to_market_pe_percent=_premium_to_market(target_pe, context.trailing_pe),
     )

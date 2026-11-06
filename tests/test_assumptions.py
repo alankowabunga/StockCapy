@@ -174,3 +174,21 @@ def test_fund_without_eps_falls_back_to_the_global_default(database_path):
     assert resolved.source == SOURCE_DEFAULT
     assert resolved.assumptions.target_price_earnings == pytest.approx(21.0)
     assert resolved.historical_median_pe is None
+
+
+def test_a_margin_override_stops_the_tool_from_widening_it():
+    """D2: a margin the user typed is theirs exactly."""
+    base = ValuationAssumptions()
+    assert base.adaptive_margin is True
+    assert AssumptionOverride("MSFT", margin_of_safety=0.10).apply_to(base).adaptive_margin is False
+
+
+def test_overriding_other_fields_leaves_the_margin_adaptive():
+    base = ValuationAssumptions()
+    assert AssumptionOverride("MSFT", target_pe=30.0).apply_to(base).adaptive_margin is True
+
+
+def test_a_stored_global_margin_counts_as_the_users_choice(database_path):
+    with open_store(database_path) as connection:
+        save_override(connection, AssumptionOverride(GLOBAL_DEFAULT_KEY, margin_of_safety=0.15))
+        assert load_global_default(connection).adaptive_margin is False

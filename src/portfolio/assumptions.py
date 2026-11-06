@@ -43,6 +43,9 @@ class AssumptionOverride:
             for field in ASSUMPTION_FIELDS
             if getattr(self, field) is not None
         }
+        if "margin_of_safety" in changes:
+            # A margin the user typed is theirs exactly; never widen it behind their back.
+            changes["adaptive_margin"] = False
         return replace(base, **changes) if changes else base
 
 

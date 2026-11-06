@@ -195,6 +195,38 @@ def test_targets_expose_estimates_and_assumption_source(client):
     assert analyst["is_informational"] is True
 
 
+def test_new_growth_and_cash_flow_models_are_listed_for_the_table(client):
+    """B5: the UI table is generated from the estimates, so new models appear untouched."""
+    client.post("/api/import", files={"file": ("export.csv", CHINESE_CSV, "text/csv")})
+    estimates = {e["model_name"]: e for e in client.get("/api/targets").json()[0]["estimates"]}
+    assert "PEG（成長調整）" in estimates
+    assert "DCF（現金流折現）" in estimates
+    assert estimates["DCF（現金流折現）"]["is_applicable"] is False  # no free cash flow here
+
+
+def test_targets_expose_the_multiple_and_the_uncertainty_behind_the_margin(client):
+    """C2 + D5. The fake stock's Graham (60) and Target P/E (360) are far apart, so the
+    tool widens the cushion from the configured 20% and says why."""
+    client.post("/api/import", files={"file": ("export.csv", CHINESE_CSV, "text/csv")})
+    target = client.get("/api/targets").json()[0]
+    assert target["target_pe"] == pytest.approx(18.0)
+    assert target["uncertainty_tier"] == "中"
+    assert target["uncertainty_reasons"] == ["模型之間差距很大"]
+    assert target["configured_margin_of_safety"] == pytest.approx(0.20)
+    assert target["margin_of_safety"] == pytest.approx(0.30)
+    assert target["buy_below"] == pytest.approx(target["reference_price"] * 0.70)
+
+
+def test_a_margin_the_user_set_is_applied_exactly(client):
+    """D2 end to end: typing a margin switches the widening off."""
+    client.post("/api/import", files={"file": ("export.csv", CHINESE_CSV, "text/csv")})
+    client.put("/api/assumptions/MSFT", json={"margin_of_safety": 0.15})
+    target = client.get("/api/targets").json()[0]
+    assert target["uncertainty_tier"] == "中"  # still described honestly
+    assert target["margin_of_safety"] == pytest.approx(0.15)
+    assert target["buy_below"] == pytest.approx(target["reference_price"] * 0.85)
+
+
 def test_risk_is_null_when_history_is_unavailable(client):
     client.post("/api/import", files={"file": ("export.csv", CHINESE_CSV, "text/csv")})
     assert client.get("/api/risk").json() is None

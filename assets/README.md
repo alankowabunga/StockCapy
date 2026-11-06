@@ -28,7 +28,7 @@ StockCapy 的卡皮巴拉圖。**原圖**是 `*-source.jpg`（白底），其餘
 | `capy-avatar.png` | Telegram bot 頭像：比讚貼圖放在品牌藍底上（到 BotFather 上傳，會被裁成圓形） |
 | `stickers/party.png` | README「智慧提醒」；網頁：股利頁沒有已領股利資料、「立即檢查」有新觸發時 |
 | `stickers/thumbsup.png` | README「第一次使用」；網頁：持股與手動持倉的空狀態、匯入 CSV 成功時 |
-| `stickers/bull.png` | README「判斷入手價」；網頁：監控清單是空的（develop 改版後暫時沒有使用的畫面） |
+| `stickers/bull.png` | README「判斷入手價」；網頁：入手價頁下方「監控清單」是空的 |
 | `stickers/winner.png` | README「快速開始」；網頁：入手價頁沒有標的 |
 
 網頁用的圖在 `src/portfolio/web/static/`：

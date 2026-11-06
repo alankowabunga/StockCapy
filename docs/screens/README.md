@@ -10,7 +10,7 @@
 |---|---|---|
 | `01-login.png` | API token 登入頁 | 3D 場景大圖 |
 | `02-today.png` | 今天首頁，還沒有持股 | thumbsup 貼圖（持股空狀態） |
-| `03-targets-empty.png` | 我的股票 › 入手價，沒有標的 | winner 貼圖 |
+| `03-targets-empty.png` | 我的股票 › 入手價，沒有標的；下方監控清單也是空的 | winner 貼圖、bull 貼圖 |
 | `04-positions-empty.png` | 我的股票 › 持股；下方淨值走勢空狀態 | thumbsup 貼圖、紅箭頭 K 線 |
 | `05-dividends-empty.png` | 我的股票 › 股利，沒有已領股利 | party 貼圖 |
 | `06-notify-watchlist-empty.png` | 提醒與資料 › 通知設定，沒有提醒對象 | 吉祥物的臉 |

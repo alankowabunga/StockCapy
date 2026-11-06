@@ -66,6 +66,23 @@ class MarketContext:
 
 
 @dataclass(frozen=True)
+class ValuationContext:
+    """What the reference price rests on, shown beside it so a lone number never reads
+    as more certain than it is. Describes the estimate; says nothing about what to do."""
+
+    model_names: tuple[str, ...]
+    uncertainty_tier: str
+    uncertainty_reasons: tuple[str, ...]
+    margin_of_safety: float
+    target_pe: float | None = None
+    multiple_source: str = "default"
+
+    @property
+    def is_fragile(self) -> bool:
+        return len(self.model_names) < 2
+
+
+@dataclass(frozen=True)
 class Signal:
     """A rule-triggered observation for one symbol. Not a recommendation."""
 
@@ -85,6 +102,7 @@ class Signal:
     reference_price: float | None = None
     buy_below_price: float | None = None
     valuation_basis: str | None = None
+    valuation_context: ValuationContext | None = None
     is_muted: bool = False
 
     @property

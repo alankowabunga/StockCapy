@@ -234,6 +234,20 @@ def test_dcf_gates_out_what_it_cannot_value(overrides):
     assert not estimate.counts_toward_aggregate
 
 
+def test_dcf_gates_out_an_adr_that_reports_in_another_currency():
+    """TSM-style: priced in USD, statements in TWD. Per-share cash flow would be off by the
+    exchange rate, so the model must not produce a number at all."""
+    adr = _cash_machine(currency="USD", financialCurrency="TWD")
+    estimate = dcf_value(adr, ASSUMPTIONS)
+    assert not estimate.is_applicable and estimate.fair_value is None
+
+
+def test_dcf_allows_matching_or_unstated_currencies():
+    assert dcf_value(_cash_machine(currency="TWD", financialCurrency="TWD"), ASSUMPTIONS).is_applicable
+    assert dcf_value(_cash_machine(currency="usd", financialCurrency="USD"), ASSUMPTIONS).is_applicable
+    assert dcf_value(_cash_machine(), ASSUMPTIONS).is_applicable  # neither stated
+
+
 def test_dcf_gates_out_when_the_discount_rate_does_not_exceed_terminal_growth():
     broken = ValuationAssumptions(required_return=0.03, terminal_growth=0.03)
     assert not dcf_value(_cash_machine(), broken).is_applicable

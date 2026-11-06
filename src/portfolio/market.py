@@ -21,6 +21,7 @@ FUNDAMENTAL_FIELDS = (
     "sector",
     "industry",
     "currency",
+    "financialCurrency",
     "freeCashflow",
     "sharesOutstanding",
     "earningsGrowth",

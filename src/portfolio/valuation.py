@@ -226,6 +226,14 @@ def _discounted_cash_flow_per_share(
     return present_value + terminal_value / (1 + rate) ** DCF_YEARS
 
 
+def _reports_in_trading_currency(fundamentals: Fundamentals) -> bool:
+    """An ADR can trade in dollars while reporting in another currency (TSM: USD price,
+    TWD statements). Cash flow per share would then be off by the exchange rate, so the
+    model stays out unless the two currencies are known to match or one is unstated."""
+    trading, reporting = fundamentals.text("currency"), fundamentals.text("financialCurrency")
+    return not trading or not reporting or trading.upper() == reporting.upper()
+
+
 def dcf_value(
     fundamentals: Fundamentals, assumptions: ValuationAssumptions
 ) -> ValuationEstimate:
@@ -237,6 +245,7 @@ def dcf_value(
         and shares > 0
         and assumptions.required_return > terminal
         and fundamentals.text("sector") not in DCF_EXCLUDED_SECTORS
+        and _reports_in_trading_currency(fundamentals)
     )
     growth = implied_earnings_growth(fundamentals)
     start_growth = min(max(growth, terminal), assumptions.growth_cap) if growth else terminal
@@ -257,7 +266,7 @@ def dcf_value(
         note=(
             f"{DCF_YEARS} 年成長逐年淡出到終值成長 {terminal:.0%}；"
             "自由現金流取自財報（未扣股票薪酬、未加淨現金），終值佔比大、對假設極敏感；"
-            "金融／不動產業不適用"
+            "金融／不動產業、財報幣別與交易幣別不同者不適用"
         ),
         is_applicable=eligible,
     )
